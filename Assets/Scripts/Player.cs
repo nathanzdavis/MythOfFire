@@ -9,6 +9,8 @@ using static UnityEngine.InputSystem.InputAction;
 [RequireComponent(typeof(PlayerInput))]
 public class Player : MonoBehaviour
 {
+    private Animator anim;
+
     public Vector2 _move;
     public float inputMagnitude;
     bool movePressed;
@@ -36,7 +38,13 @@ public class Player : MonoBehaviour
     public bool m_hitWall;
     public Transform wallDetection;
     private RaycastHit hitInfo;
-
+    float movePressedTime = 0;
+    public float turnTime;
+    bool turning;
+    float turnSmoothVelocity;
+    [SerializeField]
+    public float turnSmoothTime = 0.1f;
+    bool turn2;
     void Awake()
     {
         input = new Actions();
@@ -66,6 +74,7 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
+        anim = GetComponent<Animator>();
         origGroundCheckDist = groundCheckDistance;
     }
 
@@ -91,32 +100,91 @@ public class Player : MonoBehaviour
         }
     }
 
+    void Turn(Vector2 inputDir)
+    {
+
+        if (inputDir != Vector2.zero)
+        {
+            float targetRotation = Mathf.Atan2(inputDir.x, 0) * Mathf.Rad2Deg + Camera.main.transform.eulerAngles.y;
+            transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(transform.eulerAngles.y, targetRotation, ref turnSmoothVelocity, turnSmoothTime);
+        }
+    }
+
     void HandleMovement()
     {
-        if (!m_hitWall)
+        anim.SetBool("MovePressed", movePressed);
+        if (_move.x > 0 && _move.y < .1f && _move.y >= -.1f)
         {
-            if(_move.x > 0){
-                transform.Translate(Vector3.right * speed * Time.deltaTime);
-            }
-            if (_move.x < 0)
+            if (transform.localEulerAngles.y > 250 && !turning)
             {
-                transform.Translate(Vector3.left * speed * Time.deltaTime);
+                turn2 = false;
+                //anim.SetTrigger("Turn");
+                Invoke("Turn90", turnTime);
+                Invoke("TurnGo", turnTime/2);
+                turning = true;
             }
-            if (_move.x == 0)
-            {
-                GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
-            }
+
+            anim.SetBool("Run", true);
+
+            movePressedTime += Time.deltaTime;
         }
-        else
+        if (_move.x < 0 && _move.y < .1f && _move.y >= -.1f)
+        {
+            
+            if (transform.localEulerAngles.y < 100 && !turning)
+            {
+                turn2 = false;
+                //anim.SetTrigger("Turn");
+                Invoke("Turn270", turnTime);
+                Invoke("TurnGo", turnTime / 2);
+                turning = true;
+            }
+
+            anim.SetBool("Run", true);
+            movePressedTime += Time.deltaTime;
+        }
+        if (_move.x == 0)
         {
             GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
+            anim.SetBool("Run", false);
         }
+
+        if (m_hitWall)
+        {
+            GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
+            anim.SetBool("Run", false);
+        }
+        Turn(_move.normalized);
+        
+            
+
+    }
+
+    void TurnGo()
+    {
+        turn2 = true;
+    }
+
+    void Turn90()
+    {
+        //transform.localEulerAngles = new Vector3(transform.localRotation.x, 90, transform.localRotation.z);
+        turning = false;
+        CancelInvoke();
+    }
+
+    void Turn270()
+    {
+        //transform.localEulerAngles = new Vector3(transform.localRotation.x, 270, transform.localRotation.z);
+        turning = false;
+        CancelInvoke();
     }
 
     void HandleJump()
     {
         if (isGrounded)
         {
+            anim.applyRootMotion = false;
+            anim.SetTrigger("Jump");
             generateCameraShakeLand();
             jumped = true;
             groundCheckDistance = .001f;
@@ -156,6 +224,7 @@ public class Player : MonoBehaviour
             isGrounded = true;
             if (jumped)
             {
+                anim.applyRootMotion = true;
                 jumped = false;
                 generateCameraShakeLand();
             }
@@ -165,6 +234,8 @@ public class Player : MonoBehaviour
             isGrounded = false;
             groundNormal = Vector3.up;
         }
+
+        anim.SetBool("InAir", !isGrounded);
     }
 
     void ResetGroundCheck()

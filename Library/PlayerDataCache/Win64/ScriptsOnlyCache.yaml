@@ -3,14 +3,13 @@ ScriptsOnlyBuild:
     Assembly-CSharp.dll:
     - Player
     Cinemachine.dll:
-    - Cinemachine.CinemachineBasicMultiChannelPerlin
     - Cinemachine.CinemachineBrain
+    - Cinemachine.CinemachineFixedSignal
     - Cinemachine.CinemachineImpulseListener
     - Cinemachine.CinemachineImpulseSource
     - Cinemachine.CinemachinePipeline
     - Cinemachine.CinemachineTransposer
     - Cinemachine.CinemachineVirtualCamera
-    - Cinemachine.NoiseSettings
     Unity.InputSystem.dll:
     - UnityEngine.InputSystem.InputActionAsset
     - UnityEngine.InputSystem.InputSettings
@@ -60,11 +59,13 @@ ScriptsOnlyBuild:
     - UnityEngine.Rendering.HighDefinition.Fog
     - UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData
     - UnityEngine.Rendering.HighDefinition.HDAdditionalLightData
+    - UnityEngine.Rendering.HighDefinition.HDAdditionalReflectionData
     - UnityEngine.Rendering.HighDefinition.HDRISky
     - UnityEngine.Rendering.HighDefinition.HDRenderPipelineAsset
     - UnityEngine.Rendering.HighDefinition.HDShadowSettings
     - UnityEngine.Rendering.HighDefinition.MotionBlur
     - UnityEngine.Rendering.HighDefinition.RenderPipelineResources
+    - UnityEngine.Rendering.HighDefinition.SceneObjectIDMapSceneAsset
     - UnityEngine.Rendering.HighDefinition.ScreenSpaceRefraction
     - UnityEngine.Rendering.HighDefinition.StaticLightingSky
     - UnityEngine.Rendering.HighDefinition.Tonemapping
@@ -73,17 +74,26 @@ ScriptsOnlyBuild:
     - UnityEngine.Rendering.HighDefinition.WhiteBalance
     Unity.Rider.Editor.dll:
     - Packages.Rider.Editor.UnitTesting.CallbackData
+    Unity.TextMeshPro.dll:
+    - TMPro.TMP_FontAsset
+    - TMPro.TMP_Settings
+    - TMPro.TMP_SpriteAsset
+    - TMPro.TMP_StyleSheet
     UnityEditor.Graphs.dll:
     - UnityEditor.Graphs.AnimationBlendTree.Graph
     - UnityEditor.Graphs.AnimationBlendTree.GraphGUI
+    - UnityEditor.Graphs.AnimationStateMachine.AnyStateNode
     - UnityEditor.Graphs.AnimationStateMachine.Graph
     - UnityEditor.Graphs.AnimationStateMachine.GraphGUI
+    - UnityEditor.Graphs.AnimationStateMachine.StateNode
     - UnityEditor.Graphs.AnimatorControllerTool
     UnityEditor.TestRunner.dll:
     - UnityEditor.TestTools.TestRunner.Api.CallbacksHolder
     - UnityEditor.TestTools.TestRunner.TestListCacheData
     - UnityEditor.TestTools.TestRunner.TestRun.TestJobDataHolder
     UnityEngine.UI.dll:
+    - UnityEngine.EventSystems.EventSystem
+    - UnityEngine.EventSystems.StandaloneInputModule
     - UnityEngine.UI.Button
     - UnityEngine.UI.CanvasScaler
     - UnityEngine.UI.ContentSizeFitter
@@ -94,6 +104,7 @@ ScriptsOnlyBuild:
     - UnityEngine.UI.Mask
     - UnityEngine.UI.ScrollRect
     - UnityEngine.UI.Scrollbar
+    - UnityEngine.UI.Slider
     - UnityEngine.UI.Text
     - UnityEngine.UI.Toggle
     - UnityEngine.UI.VerticalLayoutGroup
@@ -117,20 +128,28 @@ ScriptsOnlyBuild:
       Script: {instanceID: 0}
     - Class: 48
       Script: {instanceID: 0}
+    - Class: 49
+      Script: {instanceID: 0}
     - Class: 54
       Script: {instanceID: 0}
     - Class: 65
+      Script: {instanceID: 0}
+    - Class: 74
       Script: {instanceID: 0}
     - Class: 81
       Script: {instanceID: 0}
     - Class: 89
       Script: {instanceID: 0}
+    - Class: 90
+      Script: {instanceID: 0}
+    - Class: 91
+      Script: {instanceID: 0}
+    - Class: 95
+      Script: {instanceID: 0}
     - Class: 104
       Script: {instanceID: 0}
     - Class: 108
       Script: {instanceID: 0}
-    - Class: 114
-      Script: {instanceID: 1680}
     - Class: 114
       Script: {instanceID: 1682}
     - Class: 114
@@ -138,136 +157,156 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 1686}
     - Class: 114
-      Script: {instanceID: 1694}
+      Script: {instanceID: 1688}
     - Class: 114
-      Script: {instanceID: 1738}
+      Script: {instanceID: 1696}
     - Class: 114
-      Script: {instanceID: 1792}
+      Script: {instanceID: 1740}
     - Class: 114
-      Script: {instanceID: 1872}
+      Script: {instanceID: 1794}
     - Class: 114
-      Script: {instanceID: 2154}
+      Script: {instanceID: 1874}
     - Class: 114
-      Script: {instanceID: 2572}
+      Script: {instanceID: 2156}
     - Class: 114
-      Script: {instanceID: 2684}
+      Script: {instanceID: 2402}
     - Class: 114
-      Script: {instanceID: 2868}
+      Script: {instanceID: 2574}
     - Class: 114
-      Script: {instanceID: 3026}
+      Script: {instanceID: 2686}
     - Class: 114
-      Script: {instanceID: 3226}
+      Script: {instanceID: 2870}
     - Class: 114
-      Script: {instanceID: 3524}
+      Script: {instanceID: 2938}
     - Class: 114
-      Script: {instanceID: 3552}
+      Script: {instanceID: 3028}
     - Class: 114
-      Script: {instanceID: 3684}
+      Script: {instanceID: 3228}
     - Class: 114
-      Script: {instanceID: 3712}
+      Script: {instanceID: 3526}
     - Class: 114
-      Script: {instanceID: 3774}
+      Script: {instanceID: 3554}
     - Class: 114
-      Script: {instanceID: 3950}
+      Script: {instanceID: 3686}
     - Class: 114
-      Script: {instanceID: 4088}
+      Script: {instanceID: 3714}
     - Class: 114
-      Script: {instanceID: 4148}
+      Script: {instanceID: 3776}
     - Class: 114
-      Script: {instanceID: 4256}
+      Script: {instanceID: 3952}
     - Class: 114
-      Script: {instanceID: 4480}
+      Script: {instanceID: 4090}
     - Class: 114
-      Script: {instanceID: 4564}
+      Script: {instanceID: 4150}
     - Class: 114
-      Script: {instanceID: 4652}
+      Script: {instanceID: 4258}
     - Class: 114
-      Script: {instanceID: 4674}
+      Script: {instanceID: 4482}
     - Class: 114
-      Script: {instanceID: 4760}
+      Script: {instanceID: 4566}
     - Class: 114
-      Script: {instanceID: 5052}
+      Script: {instanceID: 4636}
     - Class: 114
-      Script: {instanceID: 5548}
+      Script: {instanceID: 4654}
     - Class: 114
-      Script: {instanceID: 5794}
+      Script: {instanceID: 4676}
     - Class: 114
-      Script: {instanceID: 5850}
+      Script: {instanceID: 4762}
     - Class: 114
-      Script: {instanceID: 5982}
+      Script: {instanceID: 4838}
     - Class: 114
-      Script: {instanceID: 6000}
+      Script: {instanceID: 5054}
     - Class: 114
-      Script: {instanceID: 6060}
+      Script: {instanceID: 5170}
     - Class: 114
-      Script: {instanceID: 6076}
+      Script: {instanceID: 5550}
     - Class: 114
-      Script: {instanceID: 6310}
+      Script: {instanceID: 5796}
+    - Class: 114
+      Script: {instanceID: 5852}
+    - Class: 114
+      Script: {instanceID: 5970}
+    - Class: 114
+      Script: {instanceID: 5984}
+    - Class: 114
+      Script: {instanceID: 6002}
+    - Class: 114
+      Script: {instanceID: 6062}
+    - Class: 114
+      Script: {instanceID: 6066}
+    - Class: 114
+      Script: {instanceID: 6078}
     - Class: 114
       Script: {instanceID: 6312}
     - Class: 114
-      Script: {instanceID: 6334}
+      Script: {instanceID: 6314}
     - Class: 114
-      Script: {instanceID: 6598}
+      Script: {instanceID: 6336}
     - Class: 114
-      Script: {instanceID: 6690}
+      Script: {instanceID: 6600}
     - Class: 114
-      Script: {instanceID: 6742}
+      Script: {instanceID: 6692}
     - Class: 114
-      Script: {instanceID: 6920}
+      Script: {instanceID: 6744}
     - Class: 114
-      Script: {instanceID: 7010}
+      Script: {instanceID: 6922}
     - Class: 114
-      Script: {instanceID: 7018}
+      Script: {instanceID: 7012}
     - Class: 114
-      Script: {instanceID: 7138}
+      Script: {instanceID: 7020}
     - Class: 114
-      Script: {instanceID: 7154}
+      Script: {instanceID: 7140}
     - Class: 114
-      Script: {instanceID: 7202}
+      Script: {instanceID: 7156}
     - Class: 114
-      Script: {instanceID: 7260}
+      Script: {instanceID: 7204}
     - Class: 114
-      Script: {instanceID: 7354}
+      Script: {instanceID: 7262}
     - Class: 114
-      Script: {instanceID: 7414}
+      Script: {instanceID: 7338}
     - Class: 114
-      Script: {instanceID: 7470}
+      Script: {instanceID: 7356}
     - Class: 114
-      Script: {instanceID: 7476}
+      Script: {instanceID: 7416}
     - Class: 114
-      Script: {instanceID: 7634}
+      Script: {instanceID: 7472}
     - Class: 114
-      Script: {instanceID: 7764}
+      Script: {instanceID: 7478}
     - Class: 114
-      Script: {instanceID: 7830}
+      Script: {instanceID: 7636}
     - Class: 114
-      Script: {instanceID: 8002}
+      Script: {instanceID: 7766}
     - Class: 114
-      Script: {instanceID: 8134}
+      Script: {instanceID: 7832}
     - Class: 114
-      Script: {instanceID: 8596}
+      Script: {instanceID: 7904}
     - Class: 114
-      Script: {instanceID: 8622}
+      Script: {instanceID: 8136}
     - Class: 114
-      Script: {instanceID: 8962}
+      Script: {instanceID: 8598}
     - Class: 114
-      Script: {instanceID: 9148}
+      Script: {instanceID: 8624}
     - Class: 114
-      Script: {instanceID: 9272}
+      Script: {instanceID: 8964}
     - Class: 114
-      Script: {instanceID: 9274}
+      Script: {instanceID: 9150}
+    - Class: 114
+      Script: {instanceID: 9276}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
       Script: {instanceID: 0}
     - Class: 136
       Script: {instanceID: 0}
+    - Class: 137
+      Script: {instanceID: 0}
     - Class: 157
       Script: {instanceID: 0}
     - Class: 196
       Script: {instanceID: 0}
     - Class: 213
+      Script: {instanceID: 0}
+    - Class: 215
       Script: {instanceID: 0}
     - Class: 222
       Script: {instanceID: 0}
@@ -606,7 +645,7 @@ ScriptsOnlyBuild:
     className: TMP_SelectionCaret
   - hash:
       serializedVersion: 2
-      Hash: c1a5d3c1d4233323ace88214b5969e57
+      Hash: aeccc7de2111af3d11c4c280d4d4cf9a
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: Player
@@ -1951,4 +1990,4 @@ ScriptsOnlyBuild:
   platform: 19
   scenePathNames:
   - Assets/Scenes/samplescene.unity
-  playerPath: G:/UnityProjects/FireGameProject/Build/FireGamePlatformer.exe
+  playerPath: G:/UnityProjects/UntitledArenaGame/Build/FireGamePlatformer.exe
