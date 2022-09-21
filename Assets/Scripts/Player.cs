@@ -216,6 +216,8 @@ public class Player : MonoBehaviour
             audioSource.PlayOneShot(jumpSound);
 
             GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight);
+
+            //UIController.instance.healthText.text = "50";
         }
     }
 

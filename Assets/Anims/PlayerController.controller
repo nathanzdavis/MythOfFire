@@ -456,7 +456,7 @@ AnimatorStateMachine:
     m_Position: {x: 459.872, y: 67.29434, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -2902931841560310006}
-    m_Position: {x: 460, y: 220, z: 0}
+    m_Position: {x: 460, y: 210, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 4963258201664749958}
     m_Position: {x: 460, y: 280, z: 0}
@@ -510,7 +510,7 @@ AnimatorStateTransition:
     m_ConditionEvent: Run
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -6137703662584065614}
+  m_DstState: {fileID: 0}
   m_Solo: 0
   m_Mute: 0
   m_IsExit: 0
@@ -587,7 +587,7 @@ AnimatorStateTransition:
     m_ConditionEvent: Run
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 9012289545506256756}
+  m_DstState: {fileID: 0}
   m_Solo: 0
   m_Mute: 0
   m_IsExit: 0
