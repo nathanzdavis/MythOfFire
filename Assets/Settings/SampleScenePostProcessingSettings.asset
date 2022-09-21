@@ -364,10 +364,10 @@ MonoBehaviour:
     showEyeDropper: 1
   dirtTexture:
     m_OverrideState: 1
-    m_Value: {fileID: 2800000, guid: 5603d00a4a9ee094a93342e6eacec4a4, type: 3}
+    m_Value: {fileID: 2800000, guid: 4569800fd021e0a45a15d95b279edc50, type: 3}
   dirtIntensity:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 1
     min: 0
   anamorphic:
     m_OverrideState: 0

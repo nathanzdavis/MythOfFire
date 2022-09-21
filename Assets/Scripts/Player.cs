@@ -2,53 +2,63 @@
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEngine.InputSystem;
 using static UnityEngine.InputSystem.InputAction;
 
 [RequireComponent(typeof(PlayerInput))]
 public class Player : MonoBehaviour
 {
+    [Header("Animation")]
     private Animator anim;
 
+    [Header("Movement")]
     public Vector2 _move;
     public float inputMagnitude;
     bool movePressed;
-
-    public Vector3 nextPosition;
-    public float speed = 1f;
-
     Actions input;
     public float speedSmoothTime = 0.1f;
-    private bool isGrounded;
+    float movePressedTime = 0;
+    public float turnTime;
+    bool turning;
+    float turnSmoothVelocity;
+    public float turnSmoothTime = 0.1f;
+    public Vector3 velocity;
+    public float magnitude;
+    bool turn2;
+
+    [Header("Jump")]
+    public Vector3 nextPosition;
+    public float speed = 1f;
+    public bool isGrounded;
+    float origGroundCheckDist;
     public float groundCheckDistance = 0.1f;
     public Vector3 groundNormal;
     bool jumped;
     public LayerMask groundLayer;
     public float jumpHeight;
-    float origGroundCheckDist;
-    public Vector3 velocity;
-    public float magnitude;
-    public Cinemachine.CinemachineImpulseSource impulseFeet;
     public Cinemachine.CinemachineImpulseSource impulseLand;
+    public AudioClip jumpSound;
 
-    [Space, Header("Check Wall Settings")]
+    [Header("Wall Check")]
     [SerializeField] private LayerMask obstacleLayers;
     [Range(0f, 1f)] [SerializeField] private float rayObstacleLength = 0.1f;
     public bool m_hitWall;
     public Transform wallDetection;
     private RaycastHit hitInfo;
-    float movePressedTime = 0;
-    public float turnTime;
-    bool turning;
-    float turnSmoothVelocity;
-    [SerializeField]
-    public float turnSmoothTime = 0.1f;
-    bool turn2;
-    void Awake()
+
+    [Header("Feet Impacts/Sound")]
+    public Cinemachine.CinemachineImpulseSource impulseFeet;
+    public Transform leftFoot;
+    public Transform rightFoot;
+    public GameObject dustParticle;
+    public AudioClip[] footsteps;
+    private AudioSource audioSource;
+
+    private void Awake()
     {
         input = new Actions();
 
+        //Move input pressed
         input.Player.Move.performed += ctx =>
         {
             _move = ctx.ReadValue<Vector2>();
@@ -56,10 +66,18 @@ public class Player : MonoBehaviour
             movePressed = _move.x != 0 || _move.y != 0;
         };
 
+        //Jump input pressed
         input.Player.Jump.performed += ctx =>
         {
             HandleJump();
         };
+    }
+    private void Start()
+    {
+        //Initialize these on start
+        anim = GetComponent<Animator>();
+        audioSource = GetComponent<AudioSource>();
+        origGroundCheckDist = groundCheckDistance;
     }
 
     private void OnEnable()
@@ -72,12 +90,6 @@ public class Player : MonoBehaviour
         input.Player.Disable();
     }
 
-    private void Start()
-    {
-        anim = GetComponent<Animator>();
-        origGroundCheckDist = groundCheckDistance;
-    }
-
     private void FixedUpdate()
     {
         HandleMovement();
@@ -85,42 +97,23 @@ public class Player : MonoBehaviour
         CheckGroundStatus();
         CheckIfWall();
 
+        //For debugging
         velocity = GetComponent<Rigidbody>().velocity;
         magnitude = velocity.normalized.magnitude;
     }
-    
-    protected virtual void CheckIfWall()
-    {
-        if (isGrounded)
-        {
-            bool _hitWall = false;
-            _hitWall = Physics.Raycast(wallDetection.position + (transform.forward * .03f), transform.forward, rayObstacleLength, obstacleLayers);
-            Debug.DrawRay(wallDetection.position + (transform.forward * .03f), transform.forward * rayObstacleLength, Color.blue);
-            m_hitWall = _hitWall ? true : false;
-        }
-    }
 
-    void Turn(Vector2 inputDir)
-    {
-
-        if (inputDir != Vector2.zero)
-        {
-            float targetRotation = Mathf.Atan2(inputDir.x, 0) * Mathf.Rad2Deg + Camera.main.transform.eulerAngles.y;
-            transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(transform.eulerAngles.y, targetRotation, ref turnSmoothVelocity, turnSmoothTime);
-        }
-    }
-
-    void HandleMovement()
+    //All movement update logic
+    private void HandleMovement()
     {
         anim.SetBool("MovePressed", movePressed);
-        if (_move.x > 0 && _move.y < .1f && _move.y >= -.1f)
+        if (_move.x > 0)
         {
             if (transform.localEulerAngles.y > 250 && !turning)
             {
                 turn2 = false;
                 //anim.SetTrigger("Turn");
                 Invoke("Turn90", turnTime);
-                Invoke("TurnGo", turnTime/2);
+                Invoke("TurnGo", turnTime / 2);
                 turning = true;
             }
 
@@ -128,9 +121,9 @@ public class Player : MonoBehaviour
 
             movePressedTime += Time.deltaTime;
         }
-        if (_move.x < 0 && _move.y < .1f && _move.y >= -.1f)
+        if (_move.x < 0)
         {
-            
+
             if (transform.localEulerAngles.y < 100 && !turning)
             {
                 turn2 = false;
@@ -155,61 +148,32 @@ public class Player : MonoBehaviour
             anim.SetBool("Run", false);
         }
         Turn(_move.normalized);
-        
-            
-
     }
 
-    void TurnGo()
+    //Logic for turning
+    private void Turn(Vector2 inputDir)
     {
-        turn2 = true;
+        if (inputDir != Vector2.zero)
+        {
+            float targetRotation = Mathf.Atan2(inputDir.x, 0) * Mathf.Rad2Deg + Camera.main.transform.eulerAngles.y;
+            transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(transform.eulerAngles.y, targetRotation, ref turnSmoothVelocity, turnSmoothTime);
+        }
     }
 
-    void Turn90()
-    {
-        //transform.localEulerAngles = new Vector3(transform.localRotation.x, 90, transform.localRotation.z);
-        turning = false;
-        CancelInvoke();
-    }
-
-    void Turn270()
-    {
-        //transform.localEulerAngles = new Vector3(transform.localRotation.x, 270, transform.localRotation.z);
-        turning = false;
-        CancelInvoke();
-    }
-
-    void HandleJump()
+    //Wall check to flag if running into something
+    protected virtual void CheckIfWall()
     {
         if (isGrounded)
         {
-            anim.applyRootMotion = false;
-            anim.SetTrigger("Jump");
-            generateCameraShakeLand();
-            jumped = true;
-            groundCheckDistance = .001f;
-            Invoke(nameof(ResetGroundCheck), .1f);
-            //Using own gravity variable incase different levels have different gravity requirements
-            GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight);
+            bool _hitWall = false;
+            _hitWall = Physics.Raycast(wallDetection.position + (transform.forward * .03f), transform.forward, rayObstacleLength, obstacleLayers);
+            Debug.DrawRay(wallDetection.position + (transform.forward * .03f), transform.forward * rayObstacleLength, Color.blue);
+            m_hitWall = _hitWall ? true : false;
         }
     }
 
-    /*
-    void HandleInAir()
-    {
-        if (!isGrounded)
-        {
-            if (movePressed)
-            {
-                GetComponent<Rigidbody>().AddForce(transform.forward * airControlForce * Time.deltaTime);
-                GetComponent<Rigidbody>().velocity = new Vector3 (GetComponent<Rigidbody>().velocity.x * (airFriction * Time.deltaTime), 
-                    GetComponent<Rigidbody>().velocity.y, GetComponent<Rigidbody>().velocity.z * (airFriction * Time.deltaTime));
-            }
-        }
-    }
-    */
-
-    void CheckGroundStatus()
+    //Grounded check to make sure we can't jump in the air
+    private void CheckGroundStatus()
     {
 #if UNITY_EDITOR
         // helper to visualise the ground check ray in the scene view
@@ -238,7 +202,24 @@ public class Player : MonoBehaviour
         anim.SetBool("InAir", !isGrounded);
     }
 
-    void ResetGroundCheck()
+    //Add jump force
+    private void HandleJump()
+    {
+        if (isGrounded)
+        {
+            anim.applyRootMotion = false;
+            anim.SetTrigger("Jump");
+            generateCameraShakeJump();
+            jumped = true;
+            groundCheckDistance = .001f;
+            Invoke(nameof(ResetGroundCheck), .1f);
+            audioSource.PlayOneShot(jumpSound);
+
+            GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight);
+        }
+    }
+
+    private void ResetGroundCheck()
     {
         groundCheckDistance = origGroundCheckDist;
     }
@@ -251,5 +232,64 @@ public class Player : MonoBehaviour
     public void generateCameraShakeLand()
     {
         impulseLand.GenerateImpulse(Camera.main.transform.forward);
+        audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
     }
+
+    public void generateCameraShakeJump()
+    {
+        impulseLand.GenerateImpulse(Camera.main.transform.forward);
+    }
+
+    public void generateDustParticleLeftFoot()
+    {
+        Instantiate(dustParticle, leftFoot.position, Quaternion.Euler(0, -90, 0));
+    }
+
+    public void generateDustParticleRightFoot()
+    {
+        Instantiate(dustParticle, rightFoot.position, Quaternion.Euler(0,-90,0));
+    }
+
+    public void generateRandomFootstepNoise()
+    {
+        audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
+    }
+
+    /*
+     * Quick turn stuff, keep commented out for now
+    private void TurnGo()
+    {
+        turn2 = true;
+    }
+
+    private void Turn90()
+    {
+        //transform.localEulerAngles = new Vector3(transform.localRotation.x, 90, transform.localRotation.z);
+        turning = false;
+        CancelInvoke();
+    }
+
+    private void Turn270()
+    {
+        //transform.localEulerAngles = new Vector3(transform.localRotation.x, 270, transform.localRotation.z);
+        turning = false;
+        CancelInvoke();
+    }
+    */
+
+
+    /*
+    void HandleInAir()
+    {
+        if (!isGrounded)
+        {
+            if (movePressed)
+            {
+                GetComponent<Rigidbody>().AddForce(transform.forward * airControlForce * Time.deltaTime);
+                GetComponent<Rigidbody>().velocity = new Vector3 (GetComponent<Rigidbody>().velocity.x * (airFriction * Time.deltaTime), 
+                    GetComponent<Rigidbody>().velocity.y, GetComponent<Rigidbody>().velocity.z * (airFriction * Time.deltaTime));
+            }
+        }
+    }
+    */
 }
