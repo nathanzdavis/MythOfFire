@@ -15,7 +15,7 @@ public class Player : MonoBehaviour
     public Vector2 _move;
     public float inputMagnitude;
     bool movePressed;
-    Actions input;
+    Input input;
     public float speedSmoothTime = 0.1f;
     float movePressedTime = 0;
     public float turnTime;
@@ -24,7 +24,10 @@ public class Player : MonoBehaviour
     public float turnSmoothTime = 0.1f;
     public Vector3 velocity;
     public float magnitude;
-    bool turn2;
+    private float prevMovX;
+    private bool speedToggle;
+    public float runMultiplier;
+    //bool turn2;
 
     [Header("Jump")]
     public Vector3 nextPosition;
@@ -54,22 +57,69 @@ public class Player : MonoBehaviour
     public AudioClip[] footsteps;
     private AudioSource audioSource;
 
+    [Header("Attack")]
+    public AudioClip attackSound;
+    public float cooldownBetweenAttacks;
+    private bool attacked;
+    private bool runAttack;
+    public float runAttackChestOffset;
+    private float chestOffsetOrig;
+    public Transform spineBone;
+    bool chestTurning;
+    float chestTurnSmoothVelocity;
+    public float chestTurnSmoothTime = 0.1f;
+
+    [Header("Slide")]
+    public AudioClip slideSound;
+    public float slideCooldown;
+    private bool sliding;
+
+    [Header("AirControl")]
+    public float airFriction;
+    public float airControlForce;
+
     private void Awake()
     {
-        input = new Actions();
+        input = new Input();
 
         //Move input pressed
         input.Player.Move.performed += ctx =>
         {
             _move = ctx.ReadValue<Vector2>();
             inputMagnitude = ctx.ReadValue<Vector2>().magnitude;
-            movePressed = _move.x != 0 || _move.y != 0;
+            movePressed = _move.x != 0;
         };
 
         //Jump input pressed
         input.Player.Jump.performed += ctx =>
         {
             HandleJump();
+        };
+
+        //Attack input pressed
+        input.Player.Attack.performed += ctx =>
+        {
+            HandleAttack();
+        };
+
+        //Attack input pressed
+        input.Player.Slide.performed += ctx =>
+        {
+            HandleSlide();
+        };
+
+        //Attack input pressed
+        input.Player.Run.performed += ctx =>
+        {
+            if (!speedToggle)
+            {
+                anim.SetFloat("Speed", runMultiplier);
+            }
+            else
+            {
+                anim.SetFloat("Speed", 1);
+            }
+            speedToggle = !speedToggle;
         };
     }
     private void Start()
@@ -78,6 +128,7 @@ public class Player : MonoBehaviour
         anim = GetComponent<Animator>();
         audioSource = GetComponent<AudioSource>();
         origGroundCheckDist = groundCheckDistance;
+        chestOffsetOrig = spineBone.localEulerAngles.y;
     }
 
     private void OnEnable()
@@ -90,10 +141,15 @@ public class Player : MonoBehaviour
         input.Player.Disable();
     }
 
+    private void LateUpdate()
+    {
+        TurnIKChest();
+    }
+
     private void FixedUpdate()
     {
         HandleMovement();
-        //HandleInAir();
+        HandleInAir();
         CheckGroundStatus();
         CheckIfWall();
 
@@ -110,7 +166,7 @@ public class Player : MonoBehaviour
         {
             if (transform.localEulerAngles.y > 250 && !turning)
             {
-                turn2 = false;
+                //turn2 = false;
                 //anim.SetTrigger("Turn");
                 Invoke("Turn90", turnTime);
                 Invoke("TurnGo", turnTime / 2);
@@ -126,7 +182,7 @@ public class Player : MonoBehaviour
 
             if (transform.localEulerAngles.y < 100 && !turning)
             {
-                turn2 = false;
+                //turn2 = false;
                 //anim.SetTrigger("Turn");
                 Invoke("Turn270", turnTime);
                 Invoke("TurnGo", turnTime / 2);
@@ -136,10 +192,13 @@ public class Player : MonoBehaviour
             anim.SetBool("Run", true);
             movePressedTime += Time.deltaTime;
         }
+
         if (_move.x == 0)
         {
             GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
             anim.SetBool("Run", false);
+            anim.SetFloat("Speed", 1);
+            speedToggle = false;
         }
 
         if (m_hitWall)
@@ -147,28 +206,63 @@ public class Player : MonoBehaviour
             GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
             anim.SetBool("Run", false);
         }
-        Turn(_move.normalized);
+
+        if (_move.x != 0)
+        {
+            prevMovX = _move.x;
+        }
+
+        Turn(prevMovX);
     }
 
     //Logic for turning
-    private void Turn(Vector2 inputDir)
+    private void Turn(float x)
     {
+        if (x < 0)
+        {
+            transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(transform.eulerAngles.y, -90, ref turnSmoothVelocity, turnSmoothTime);
+        }
+        if (x > 0)
+        {
+            transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(transform.eulerAngles.y, 90, ref turnSmoothVelocity, turnSmoothTime);
+        }
+
+        /*
         if (inputDir != Vector2.zero)
         {
             float targetRotation = Mathf.Atan2(inputDir.x, 0) * Mathf.Rad2Deg + Camera.main.transform.eulerAngles.y;
-            transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(transform.eulerAngles.y, targetRotation, ref turnSmoothVelocity, turnSmoothTime);
+        }
+        */
+    }
+
+    //Logic for turning
+    private void TurnIKChest()
+    {
+        if (runAttack)
+        {
+            spineBone.localEulerAngles = Vector3.up * Mathf.SmoothDampAngle(spineBone.localEulerAngles.y, runAttackChestOffset, ref chestTurnSmoothVelocity, chestTurnSmoothTime);
+        }
+        if (!runAttack)
+        {
+            spineBone.localEulerAngles = Vector3.up * Mathf.SmoothDampAngle(spineBone.localEulerAngles.y, chestOffsetOrig, ref chestTurnSmoothVelocity, chestTurnSmoothTime);
         }
     }
 
     //Wall check to flag if running into something
     protected virtual void CheckIfWall()
     {
-        if (isGrounded)
+        bool _hitWall = false;
+        RaycastHit hitobject;
+        _hitWall = Physics.Raycast(wallDetection.position + (transform.forward * .03f), transform.forward, out hitobject, rayObstacleLength, obstacleLayers);
+        Debug.DrawRay(wallDetection.position + (transform.forward * .03f), transform.forward * rayObstacleLength, Color.blue);
+        float hitAngle = Vector3.Angle(transform.forward, hitobject.normal) - 90;
+        if (hitAngle > 60)
         {
-            bool _hitWall = false;
-            _hitWall = Physics.Raycast(wallDetection.position + (transform.forward * .03f), transform.forward, rayObstacleLength, obstacleLayers);
-            Debug.DrawRay(wallDetection.position + (transform.forward * .03f), transform.forward * rayObstacleLength, Color.blue);
             m_hitWall = _hitWall ? true : false;
+        }
+        else
+        {
+            m_hitWall = false;
         }
     }
 
@@ -185,12 +279,20 @@ public class Player : MonoBehaviour
         {
 
             groundNormal = hitInfo.normal;
+
+            if (!isGrounded)
+            {
+                generateCameraShakeLand();
+                generateCameraShakeLand();
+                audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
+            }
+
             isGrounded = true;
+
             if (jumped)
             {
                 anim.applyRootMotion = true;
                 jumped = false;
-                generateCameraShakeLand();
             }
         }
         else
@@ -200,6 +302,14 @@ public class Player : MonoBehaviour
         }
 
         anim.SetBool("InAir", !isGrounded);
+        if (!isGrounded)
+        {
+            GetComponent<IKFeet>().raycastDownDistance = 0f;
+        }
+        else
+        {
+            GetComponent<IKFeet>().raycastDownDistance = GetComponent<IKFeet>().origDownDistance;
+        }
     }
 
     //Add jump force
@@ -221,6 +331,55 @@ public class Player : MonoBehaviour
         }
     }
 
+    //Attack
+    private void HandleAttack()
+    {
+        if (isGrounded && !attacked)
+        {
+            if (movePressed)
+            {
+                runAttack = true;
+            }
+
+            if(!sliding)
+                anim.SetTrigger("Attack" + Random.Range(1,3));
+            else
+                anim.SetTrigger("AttackSlide");
+
+            generateCameraShake();
+            audioSource.PlayOneShot(attackSound);
+            //UIController.instance.healthText.text = "50";
+
+            attacked = true;
+            Invoke(nameof(AttackReset), cooldownBetweenAttacks);
+        }
+    }
+
+    private void AttackReset()
+    {
+        attacked = false;
+        runAttack = false;
+    }
+
+    //Slide
+    private void HandleSlide()
+    {
+        if (isGrounded && movePressed)
+        {
+            sliding = true;
+            Invoke(nameof(ResetSlide), slideCooldown);
+            anim.SetTrigger("Slide");
+            //generateCameraShakeJump();
+            audioSource.PlayOneShot(slideSound);
+            //UIController.instance.healthText.text = "50";
+        }
+    }
+
+    private void ResetSlide()
+    {
+        sliding = false;
+    }
+
     private void ResetGroundCheck()
     {
         groundCheckDistance = origGroundCheckDist;
@@ -234,7 +393,6 @@ public class Player : MonoBehaviour
     public void generateCameraShakeLand()
     {
         impulseLand.GenerateImpulse(Camera.main.transform.forward);
-        audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
     }
 
     public void generateCameraShakeJump()
@@ -278,14 +436,11 @@ public class Player : MonoBehaviour
         CancelInvoke();
     }
     */
-
-
-    /*
     void HandleInAir()
     {
         if (!isGrounded)
         {
-            if (movePressed)
+            if (movePressed && !m_hitWall)
             {
                 GetComponent<Rigidbody>().AddForce(transform.forward * airControlForce * Time.deltaTime);
                 GetComponent<Rigidbody>().velocity = new Vector3 (GetComponent<Rigidbody>().velocity.x * (airFriction * Time.deltaTime), 
@@ -293,5 +448,5 @@ public class Player : MonoBehaviour
             }
         }
     }
-    */
+    
 }

@@ -53,13 +53,12 @@
     <UnityVersion>2022.1.14f1</UnityVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Analyzer Include="C:\Program Files (x86)\Microsoft Visual Studio Tools for Unity\16.0\Analyzers\Microsoft.Unity.Analyzers.dll" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="Assets\DestroyMe.cs" />
     <Compile Include="Assets\Input\Input.cs" />
     <Compile Include="Assets\Scripts\Player.cs" />
-    <Compile Include="Assets\DefaultHDRP\SampleSceneAssets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\UIController.cs" />
+    <Compile Include="Assets\DefaultHDRP\SampleSceneAssets\TutorialInfo\Scripts\Readme.cs" />
+    <Compile Include="Assets\Scripts\IKFeet.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
