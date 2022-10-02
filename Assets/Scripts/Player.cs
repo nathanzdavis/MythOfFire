@@ -4,6 +4,7 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static UnityEngine.InputSystem.InputAction;
+using TMPro;
 
 [RequireComponent(typeof(PlayerInput))]
 public class Player : MonoBehaviour
@@ -42,6 +43,7 @@ public class Player : MonoBehaviour
     public Cinemachine.CinemachineImpulseSource impulseLand;
     public AudioClip jumpSound;
     public float gravity = -9.81f;
+    public float hitAngleDown;
 
     [Header("Wall Check")]
     [SerializeField] private LayerMask obstacleLayers;
@@ -49,6 +51,8 @@ public class Player : MonoBehaviour
     public bool m_hitWall;
     public Transform wallDetection;
     private RaycastHit hitInfo;
+    public float hitAngle;
+    public Vector3 hitNormal;
 
     [Header("Feet Impacts/Sound")]
     public Cinemachine.CinemachineImpulseSource impulseFeet;
@@ -70,18 +74,16 @@ public class Player : MonoBehaviour
     float chestTurnSmoothVelocity;
     public float chestTurnSmoothTime = 0.1f;
     public float dashAmount;
+    public float damageForce;
+    public GameObject damagePopup;
+    public TrailRenderer[] wooshes;
 
     [Header("Slide")]
     public AudioClip slideSound;
     public float slideCooldown;
     private bool sliding;
-
-    [Header("Dash")]
-    public float dashingPower = 24f;
-    public float dashingTime = 0.2f;
-    private float dashingCooldown = 1f;
-    private bool canDash = true;
-    private bool isDashing;
+    private bool canSlideAttack;
+    public float canSlideAttackCooldown;
 
     [Header("AirControl")]
     public float airFriction;
@@ -145,6 +147,11 @@ public class Player : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
         origGroundCheckDist = groundCheckDistance;
         chestOffsetOrig = spineBone.localEulerAngles.y;
+
+        foreach(TrailRenderer tr in wooshes)
+        {
+            tr.emitting = false;
+        }
     }
 
     private void OnEnable()
@@ -274,7 +281,8 @@ public class Player : MonoBehaviour
         RaycastHit hitobject;
         _hitWall = Physics.Raycast(wallDetection.position + (transform.forward * .03f), transform.forward, out hitobject, rayObstacleLength, obstacleLayers);
         Debug.DrawRay(wallDetection.position + (transform.forward * .03f), transform.forward * rayObstacleLength, Color.blue);
-        float hitAngle = Vector3.Angle(transform.forward, hitobject.normal) - 90;
+        hitNormal = hitobject.normal;
+        hitAngle = Vector3.Angle(transform.forward, hitobject.normal) - 90;
         if (hitAngle > 60)
         {
             m_hitWall = _hitWall ? true : false;
@@ -296,12 +304,11 @@ public class Player : MonoBehaviour
         // it is also good to note that the transform position in the sample assets is at the base of the character
         if (Physics.Raycast(transform.position + (Vector3.up * 0.1f), Vector3.down, out hitInfo, groundCheckDistance, groundLayer))
         {
-
+            hitAngleDown = Vector3.Angle(transform.forward, hitInfo.normal) - 90;
             groundNormal = hitInfo.normal;
 
             if (!isGrounded)
             {
-                generateCameraShakeLand();
                 generateCameraShakeLand();
                 audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
             }
@@ -360,14 +367,41 @@ public class Player : MonoBehaviour
                 runAttack = true;
             }
 
-            if (!sliding)
+            if (!canSlideAttack)
             {
-                //if (!sword.GetComponent<SwordHitbox>().inTarget)
-                    //StartCoroutine(Dash());
-                //GetComponent<Rigidbody>().AddForce(transform.forward * dashAmount, ForceMode.Acceleration);
+                if (!sword.GetComponent<SwordHitbox>().inTarget)
+                {
+                    if (hitAngleDown != 0)
+                    {
+                        Vector3 dir;
+                        if (transform.forward.x < 0)
+                        {
+                            dir = Quaternion.AngleAxis(hitAngleDown, transform.forward) * transform.forward;
+                        }
+                        else
+                        {
+                            dir = Quaternion.AngleAxis(hitAngleDown + 180, transform.forward) * transform.right;
+                        }
+                        GetComponent<Rigidbody>().AddForce(dir * dashAmount, ForceMode.Acceleration);
+
+                        foreach (TrailRenderer tr in wooshes)
+                        {
+                            tr.emitting = true;
+                        }
+                    }
+                    else
+                    {
+                        GetComponent<Rigidbody>().AddForce(transform.forward * dashAmount, ForceMode.Acceleration);
+                        foreach (TrailRenderer tr in wooshes)
+                        {
+                            tr.emitting = true;
+                        }
+                    }
+                }
+
                 anim.SetTrigger("Attack" + Random.Range(1, 3));
             }
-            else
+            else if (canSlideAttack)
                 anim.SetTrigger("AttackSlide");
 
             generateCameraShake();
@@ -402,6 +436,10 @@ public class Player : MonoBehaviour
     {
         attacked = false;
         runAttack = false;
+        foreach (TrailRenderer tr in wooshes)
+        {
+            tr.emitting = false;
+        }
     }
 
     //Slide
@@ -409,8 +447,10 @@ public class Player : MonoBehaviour
     {
         if (isGrounded && movePressed && !sliding)
         {
+            canSlideAttack = true;
             sliding = true;
             Invoke(nameof(ResetSlide), slideCooldown);
+            Invoke(nameof(ResetSlideAttack), canSlideAttackCooldown);
             anim.SetTrigger("Slide");
             //generateCameraShakeJump();
             audioSource.PlayOneShot(slideSound);
@@ -421,6 +461,11 @@ public class Player : MonoBehaviour
     private void ResetSlide()
     {
         sliding = false;
+    }
+
+    private void ResetSlideAttack()
+    {
+        canSlideAttack = false;
     }
 
     private void ResetGroundCheck()
@@ -471,6 +516,10 @@ public class Player : MonoBehaviour
             audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
             impulseSword.GenerateImpulse(Camera.main.transform.forward);
             sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Enemy>().Damage(damage);
+            sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().velocity = Vector3.zero;
+            sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+            GameObject dmgPopup = Instantiate(damagePopup, sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Enemy>().textSpawn.position, Quaternion.identity);
+            dmgPopup.GetComponentInChildren<TextMeshPro>().text = damage.ToString();
         }
     }
 
