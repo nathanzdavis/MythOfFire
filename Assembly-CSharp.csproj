@@ -55,8 +55,10 @@
   <ItemGroup>
     <Compile Include="Assets\DestroyMe.cs" />
     <Compile Include="Assets\Input\Input.cs" />
+    <Compile Include="Assets\Enemy.cs" />
     <Compile Include="Assets\Scripts\Player.cs" />
     <Compile Include="Assets\UIController.cs" />
+    <Compile Include="Assets\SwordHitbox.cs" />
     <Compile Include="Assets\DefaultHDRP\SampleSceneAssets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\Scripts\IKFeet.cs" />
   </ItemGroup>

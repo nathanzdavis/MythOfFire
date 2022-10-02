@@ -41,6 +41,7 @@ public class Player : MonoBehaviour
     public float jumpHeight;
     public Cinemachine.CinemachineImpulseSource impulseLand;
     public AudioClip jumpSound;
+    public float gravity = -9.81f;
 
     [Header("Wall Check")]
     [SerializeField] private LayerMask obstacleLayers;
@@ -68,15 +69,30 @@ public class Player : MonoBehaviour
     bool chestTurning;
     float chestTurnSmoothVelocity;
     public float chestTurnSmoothTime = 0.1f;
+    public float dashAmount;
 
     [Header("Slide")]
     public AudioClip slideSound;
     public float slideCooldown;
     private bool sliding;
 
+    [Header("Dash")]
+    public float dashingPower = 24f;
+    public float dashingTime = 0.2f;
+    private float dashingCooldown = 1f;
+    private bool canDash = true;
+    private bool isDashing;
+
     [Header("AirControl")]
     public float airFriction;
     public float airControlForce;
+
+    [Header("Sword")]
+    public GameObject sword;
+    public int damage;
+    public Cinemachine.CinemachineImpulseSource impulseSword;
+    public AudioClip[] swordSlashes;
+    public AudioClip[] swordhits;
 
     private void Awake()
     {
@@ -156,6 +172,9 @@ public class Player : MonoBehaviour
         //For debugging
         velocity = GetComponent<Rigidbody>().velocity;
         magnitude = velocity.normalized.magnitude;
+
+        //Gravity
+        GetComponent<Rigidbody>().AddForce(Vector3.down * gravity);
     }
 
     //All movement update logic
@@ -341,8 +360,13 @@ public class Player : MonoBehaviour
                 runAttack = true;
             }
 
-            if(!sliding)
-                anim.SetTrigger("Attack" + Random.Range(1,3));
+            if (!sliding)
+            {
+                //if (!sword.GetComponent<SwordHitbox>().inTarget)
+                    //StartCoroutine(Dash());
+                //GetComponent<Rigidbody>().AddForce(transform.forward * dashAmount, ForceMode.Acceleration);
+                anim.SetTrigger("Attack" + Random.Range(1, 3));
+            }
             else
                 anim.SetTrigger("AttackSlide");
 
@@ -355,6 +379,25 @@ public class Player : MonoBehaviour
         }
     }
 
+    /*
+    private IEnumerator Dash()
+    {
+        anim.applyRootMotion = false;
+        //canDash = false;
+        //isDashing = true;
+        //float originalGravity = gravity;
+        //gravity = 0f;
+        GetComponent<Rigidbody>().velocity = transform.forward * dashingPower;
+        yield return new WaitForSeconds(dashingTime);
+        //tr.emitting = false;
+        //gravity = originalGravity;
+        //isDashing = false;
+        yield return new WaitForSeconds(dashingCooldown);
+        anim.applyRootMotion = true;
+        //canDash = true;
+    }
+    */
+
     private void AttackReset()
     {
         attacked = false;
@@ -364,7 +407,7 @@ public class Player : MonoBehaviour
     //Slide
     private void HandleSlide()
     {
-        if (isGrounded && movePressed)
+        if (isGrounded && movePressed && !sliding)
         {
             sliding = true;
             Invoke(nameof(ResetSlide), slideCooldown);
@@ -407,12 +450,28 @@ public class Player : MonoBehaviour
 
     public void generateDustParticleRightFoot()
     {
-        Instantiate(dustParticle, rightFoot.position, Quaternion.Euler(0,-90,0));
+        Instantiate(dustParticle, rightFoot.position, Quaternion.Euler(0, -90, 0));
     }
 
     public void generateRandomFootstepNoise()
     {
         audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
+    }
+
+    public void generateSwordEffects()
+    {
+        audioSource.PlayOneShot(swordSlashes[Random.Range(0, swordSlashes.Length)]);
+        impulseFeet.GenerateImpulse(Camera.main.transform.forward);
+    }
+
+    public void generateSwordDamage()
+    {
+        if (sword.GetComponent<SwordHitbox>().inTarget)
+        {
+            audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+            impulseSword.GenerateImpulse(Camera.main.transform.forward);
+            sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Enemy>().Damage(damage);
+        }
     }
 
     /*
@@ -443,10 +502,10 @@ public class Player : MonoBehaviour
             if (movePressed && !m_hitWall)
             {
                 GetComponent<Rigidbody>().AddForce(transform.forward * airControlForce * Time.deltaTime);
-                GetComponent<Rigidbody>().velocity = new Vector3 (GetComponent<Rigidbody>().velocity.x * (airFriction * Time.deltaTime), 
+                GetComponent<Rigidbody>().velocity = new Vector3(GetComponent<Rigidbody>().velocity.x * (airFriction * Time.deltaTime),
                     GetComponent<Rigidbody>().velocity.y, GetComponent<Rigidbody>().velocity.z * (airFriction * Time.deltaTime));
             }
         }
     }
-    
+
 }
