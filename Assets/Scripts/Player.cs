@@ -70,13 +70,11 @@ public class Player : MonoBehaviour
     public float runAttackChestOffset;
     private float chestOffsetOrig;
     public Transform spineBone;
-    bool chestTurning;
-    float chestTurnSmoothVelocity;
     public float chestTurnSmoothTime = 0.1f;
     public float dashAmount;
     public float damageForce;
     public GameObject damagePopup;
-    public TrailRenderer[] wooshes;
+    public GameObject dashEffect;
 
     [Header("Slide")]
     public AudioClip slideSound;
@@ -95,6 +93,13 @@ public class Player : MonoBehaviour
     public Cinemachine.CinemachineImpulseSource impulseSword;
     public AudioClip[] swordSlashes;
     public AudioClip[] swordhits;
+    public AudioClip[] swordParrys;
+    public GameObject[] slashEffects;
+    public GameObject[] slashEffectHits;
+
+    [Header("Debug")]
+    public bool insideEnemyHitbox;
+    public GameObject currentEnemyOnUs;
 
     private void Awake()
     {
@@ -118,6 +123,12 @@ public class Player : MonoBehaviour
         input.Player.Attack.performed += ctx =>
         {
             HandleAttack();
+        };
+
+        //Guard input pressed
+        input.Player.Guard.performed += ctx =>
+        {
+            HandleGuard();
         };
 
         //Attack input pressed
@@ -148,10 +159,6 @@ public class Player : MonoBehaviour
         origGroundCheckDist = groundCheckDistance;
         chestOffsetOrig = spineBone.localEulerAngles.y;
 
-        foreach(TrailRenderer tr in wooshes)
-        {
-            tr.emitting = false;
-        }
     }
 
     private void OnEnable()
@@ -166,7 +173,7 @@ public class Player : MonoBehaviour
 
     private void LateUpdate()
     {
-        TurnIKChest();
+        //TurnIKChest();
     }
 
     private void FixedUpdate()
@@ -261,7 +268,7 @@ public class Player : MonoBehaviour
         */
     }
 
-    //Logic for turning
+    /*
     private void TurnIKChest()
     {
         if (runAttack)
@@ -273,6 +280,7 @@ public class Player : MonoBehaviour
             spineBone.localEulerAngles = Vector3.up * Mathf.SmoothDampAngle(spineBone.localEulerAngles.y, chestOffsetOrig, ref chestTurnSmoothVelocity, chestTurnSmoothTime);
         }
     }
+    */
 
     //Wall check to flag if running into something
     protected virtual void CheckIfWall()
@@ -383,19 +391,14 @@ public class Player : MonoBehaviour
                             dir = Quaternion.AngleAxis(hitAngleDown + 180, transform.forward) * transform.right;
                         }
                         GetComponent<Rigidbody>().AddForce(dir * dashAmount, ForceMode.Acceleration);
-
-                        foreach (TrailRenderer tr in wooshes)
-                        {
-                            tr.emitting = true;
-                        }
+                        GameObject dashObj = Instantiate(dashEffect, transform.localPosition, transform.localRotation, transform);
                     }
                     else
                     {
                         GetComponent<Rigidbody>().AddForce(transform.forward * dashAmount, ForceMode.Acceleration);
-                        foreach (TrailRenderer tr in wooshes)
-                        {
-                            tr.emitting = true;
-                        }
+                        GameObject dashObj = Instantiate(dashEffect, transform.position, transform.rotation, transform);
+                        dashObj.transform.localEulerAngles = new Vector3(0, -180, 0);
+                        dashObj.transform.localPosition = new Vector3(0, 1, 0);
                     }
                 }
 
@@ -411,6 +414,22 @@ public class Player : MonoBehaviour
             attacked = true;
             Invoke(nameof(AttackReset), cooldownBetweenAttacks);
         }
+    }
+
+    //Guard
+    private void HandleGuard()
+    {
+        if (insideEnemyHitbox)
+        {
+            anim.SetTrigger("Parry");
+        }
+    }
+
+    public void ParryEffects()
+    {
+        audioSource.PlayOneShot(swordParrys[Random.Range(0, swordParrys.Length)]);
+        currentEnemyOnUs.GetComponent<Rigidbody>().velocity = Vector3.zero;
+        currentEnemyOnUs.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
     }
 
     /*
@@ -436,10 +455,6 @@ public class Player : MonoBehaviour
     {
         attacked = false;
         runAttack = false;
-        foreach (TrailRenderer tr in wooshes)
-        {
-            tr.emitting = false;
-        }
     }
 
     //Slide
@@ -523,6 +538,20 @@ public class Player : MonoBehaviour
         }
     }
 
+    public void generateSlashEffect()
+    {
+        if (!sword.GetComponent<SwordHitbox>().inTarget)
+        {
+            GameObject slashObj = Instantiate(slashEffects[Random.Range(0, slashEffects.Length)], sword.transform.position, sword.transform.rotation);
+            slashObj.transform.Rotate(-90, 0, 0);
+        }
+        else
+        {
+            GameObject slashObj = Instantiate(slashEffectHits[Random.Range(0, slashEffectHits.Length)], sword.transform.position, sword.transform.rotation);
+            slashObj.transform.Rotate(-90, 0, 0);
+        }
+    }
+
     /*
      * Quick turn stuff, keep commented out for now
     private void TurnGo()
@@ -557,4 +586,21 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.tag == "EnemyHitbox")
+        {
+            currentEnemyOnUs = other.transform.root.gameObject;
+            insideEnemyHitbox = true;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.tag == "EnemyHitbox")
+        {
+            currentEnemyOnUs = null;
+            insideEnemyHitbox = false;
+        }
+    }
 }
