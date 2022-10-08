@@ -6,7 +6,9 @@ using UnityEngine.UI;
 public class UIController : MonoBehaviour
 {
     public static UIController instance;
-    public Text healthText;
+    public Slider health;
+    public Slider embers;
+    public Slider wave;
 
 
     // Start is called before the first frame update

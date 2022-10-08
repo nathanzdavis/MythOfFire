@@ -54,13 +54,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Assets\DestroyMe.cs" />
+    <Compile Include="Assets\Constrain.cs" />
     <Compile Include="Assets\Input\Input.cs" />
     <Compile Include="Assets\Enemy.cs" />
-    <Compile Include="Assets\Scripts\Player.cs" />
+    <Compile Include="Assets\Scripts\Player\Player.cs" />
     <Compile Include="Assets\UIController.cs" />
+    <Compile Include="Assets\Scripts\Enemies\MonsterController.cs" />
+    <Compile Include="Assets\Scripts\Player\IKFeet.cs" />
     <Compile Include="Assets\SwordHitbox.cs" />
     <Compile Include="Assets\DefaultHDRP\SampleSceneAssets\TutorialInfo\Scripts\Readme.cs" />
-    <Compile Include="Assets\Scripts\IKFeet.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
