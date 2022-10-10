@@ -23,4 +23,12 @@ public class SwordHitbox : MonoBehaviour
             currentTarget = null;
         }
     }
+
+    void Update()
+    {
+        if (currentTarget && currentTarget.GetComponent<MonsterController>().health <= 0)
+        {
+            currentTarget = null;
+        }
+    }
 }

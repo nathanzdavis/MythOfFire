@@ -9,6 +9,9 @@ using TMPro;
 [RequireComponent(typeof(PlayerInput))]
 public class Player : MonoBehaviour
 {
+    [Header("Input Manager")]
+    Input input;
+
     [Header("Animation")]
     private Animator anim;
 
@@ -16,7 +19,6 @@ public class Player : MonoBehaviour
     public Vector2 _move;
     public float inputMagnitude;
     bool movePressed;
-    Input input;
     public float speedSmoothTime = 0.1f;
     float movePressedTime = 0;
     public float turnTime;
@@ -125,7 +127,10 @@ public class Player : MonoBehaviour
         //Attack input pressed
         input.Player.Attack.performed += ctx =>
         {
-            HandleAttack();
+            if (isGrounded)
+                HandleAttack();
+            else
+                HandleAirAttack();
         };
 
         //Guard input pressed
@@ -387,7 +392,8 @@ public class Player : MonoBehaviour
             {
                 if (!sword.GetComponent<SwordHitbox>().inTarget)
                 {
-                    if (hitAngleDown != 0)
+                    /*
+                    if (hitAngle == 0)
                     {
                         Vector3 dir;
                         if (transform.forward.x < 0)
@@ -408,6 +414,11 @@ public class Player : MonoBehaviour
                         dashObj.transform.localEulerAngles = new Vector3(0, -180, 0);
                         dashObj.transform.localPosition = new Vector3(0, 1, 0);
                     }
+                    */
+                    GetComponent<Rigidbody>().AddForce(transform.forward * dashAmount, ForceMode.Acceleration);
+                    GameObject dashObj = Instantiate(dashEffect, transform.position, transform.rotation, transform);
+                    dashObj.transform.localEulerAngles = new Vector3(0, -180, 0);
+                    dashObj.transform.localPosition = new Vector3(0, 1, 0);
                 }
 
                 anim.SetTrigger("Attack" + Random.Range(1, 3));
@@ -421,6 +432,27 @@ public class Player : MonoBehaviour
 
             attacked = true;
             Invoke(nameof(AttackReset), cooldownBetweenAttacks);
+        }
+    }
+
+    //Air Attack
+    private void HandleAirAttack()
+    {
+        //Ground slam
+        if (!isGrounded && !attacked && _move.y < 0)
+        {
+            anim.applyRootMotion = true;
+            anim.SetTrigger("AirAttack");
+
+            generateCameraShake();
+            audioSource.PlayOneShot(attackSound);
+
+            attacked = true;
+            Invoke(nameof(AttackReset), cooldownBetweenAttacks);
+        }
+        else if (!isGrounded && !attacked)
+        {
+            //Do normal floaty air attack stuff
         }
     }
 

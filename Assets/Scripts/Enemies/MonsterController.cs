@@ -5,6 +5,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.AI;
+
+[System.Serializable]
+public class serializableClass
+{
+    public List<Color> nestedColors;
+}
 
 public class MonsterController : MonoBehaviour
 {
@@ -21,8 +28,6 @@ public class MonsterController : MonoBehaviour
     public float attackDelay;
     bool aggro;
     private GameObject target;
-    public Material redMat;
-    Material origMaterial;
     bool dying;
     bool withinAttackRange;
     public float swingDelay;
@@ -34,7 +39,8 @@ public class MonsterController : MonoBehaviour
     public bool useLives;
     public Transform spawnpoint;
     public Transform textSpawn;
-    public GameObject rendererObj;
+    public GameObject[] rendererObjs;
+    public SkinnedMeshRenderer[] dissolveObjs;
     public GameObject rigObj;
     float turnSmoothVelocity;
     public float turnSmoothTime = 0.1f;
@@ -43,13 +49,29 @@ public class MonsterController : MonoBehaviour
     float velocity;
     public GameObject damagePopup;
     public Collider[] colliders;
+    public Color hitColor;
+    public float dissolveValue = 1;
+    private float origDissolve;
+    //public List<List<Color>> origColors;
+    public List<serializableClass> origColors = new List<serializableClass>();
+    public GameObject particles;
+    bool waiting;
 
     void Start()
     {
-        origMaterial = rendererObj.GetComponent<SkinnedMeshRenderer>().material;
+        for (int i = 0; i < rendererObjs.Length; i++)
+        {
+            foreach(Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+            {
+                origColors[i].nestedColors.Add(m.GetColor("_Color"));
+            }
+        }
+        
 
         if (useLives)
         monsterLives.text = lives.ToString();
+
+        origDissolve = dissolveValue;
     }
 
     void Update()
@@ -57,6 +79,7 @@ public class MonsterController : MonoBehaviour
         velocity = ((transform.position - previous).magnitude) / Time.deltaTime;
         previous = transform.position;
 
+        print(velocity);
         if (health > 0)
         {
             if (velocity > 2 || velocity < -2)
@@ -89,6 +112,16 @@ public class MonsterController : MonoBehaviour
                 aggro = false;
             }
             //anim.SetBool("moving", false);
+        }
+
+        if (waiting && !withinAttackRange)
+        {
+            anim.SetBool("moving", false);
+        }
+
+        if (aggro)
+        {
+            waiting = false;
         }
     }
 
@@ -124,14 +157,17 @@ public class MonsterController : MonoBehaviour
 
         if (!aggro)
         {
+            
             if (targetPoint.transform.position.x > transform.position.x)
                 rigObj.transform.localEulerAngles = new Vector3(0, 180, 0);
             else
                 rigObj.transform.localEulerAngles = new Vector3(0, 0, 0);
-
+            
+            //GetComponent<NavMeshAgent>().destination = targetPoint.position;
             transform.position = Vector3.MoveTowards(transform.position, targetPoint.position, speed * Time.deltaTime);
-            if (Vector3.Distance(transform.position, targetPoint.position) < 0.2f && !reachedPoint)
+            if ((transform.position.x - targetPoint.position.x < 0.2f) && !reachedPoint)
             {
+                waiting = true;
                 Invoke("switchPoint", idleTime);
                 reachedPoint = true;
                 //anim.SetBool("moving", false);
@@ -145,6 +181,7 @@ public class MonsterController : MonoBehaviour
             else
                 rigObj.transform.localEulerAngles = new Vector3(0, 0, 0);
 
+            //GetComponent<NavMeshAgent>().destination = target.transform.position;
             transform.position = Vector3.MoveTowards(transform.position, target.transform.position, speed * Time.deltaTime);
 
             //CancelInvoke("move");
@@ -165,6 +202,7 @@ public class MonsterController : MonoBehaviour
             indexModifier = 1;
         index += indexModifier;
         reachedPoint = false;
+        waiting = false;
     }
 
     void OnTriggerEnter(Collider col)
@@ -212,7 +250,14 @@ public class MonsterController : MonoBehaviour
             dmgPopup.GetComponentInChildren<TextMeshPro>().text = damage.ToString();
 
             health -= damage;
-            rendererObj.GetComponent<SkinnedMeshRenderer>().material = redMat;
+            for (int i = 0; i < rendererObjs.Length; i++)
+            {
+                foreach(Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                {
+                    m.SetColor("_Color", hitColor);
+                }
+            }
+
             Invoke("resetColor", .1f);
             if (health <= 0 && !dying)
             {
@@ -225,7 +270,13 @@ public class MonsterController : MonoBehaviour
 
     void resetColor()
     {
-        rendererObj.GetComponent<SkinnedMeshRenderer>().material = origMaterial;
+        for (int i = 0; i < rendererObjs.Length; i++)
+        {
+            for(int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+            {
+                rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].SetColor("_Color", origColors[i].nestedColors[j]);
+            }
+        }
     }
 
     public void Die()
@@ -244,17 +295,30 @@ public class MonsterController : MonoBehaviour
             target.GetComponent<Player>().insideEnemyHitbox = false;
             target.GetComponent<Player>().currentEnemyOnUs = null;
         }
+        particles.SetActive(false);
+        StartCoroutine("Dissolve");
+        //GetComponent<NavMeshAgent>().isStopped = true;
+        healthBar.gameObject.SetActive(false);
+    }
 
-
-        foreach (Collider c in colliders)
+    private IEnumerator Dissolve()
+    {
+        while (dissolveValue >= -2)
         {
-            //c.enabled = false;
+            foreach(SkinnedMeshRenderer smr in dissolveObjs)
+            {
+                foreach (Material m in smr.materials)
+                {
+                    dissolveValue -= .1f;
+                    m.SetFloat("_CutoffHeight", dissolveValue);
+                }
+            }
+            yield return new WaitForSeconds(.05f);
         }
     }
 
     void Deactivate()
     {
-        healthBar.gameObject.SetActive(false);
         //rendererObj.GetComponent<SkinnedMeshRenderer>().enabled = false;
         if (lives != 0 && useLives)
         {
@@ -274,7 +338,7 @@ public class MonsterController : MonoBehaviour
         if (target != null)
             healthBar.gameObject.SetActive(true);
         canAttack = true;
-        rendererObj.GetComponent<SkinnedMeshRenderer>().enabled = true;
+        //rendererObj.GetComponent<SkinnedMeshRenderer>().enabled = true;
         GetComponent<CapsuleCollider>().enabled = true;
         GetComponent<Rigidbody>().isKinematic = false;
         dying = false;
@@ -287,5 +351,18 @@ public class MonsterController : MonoBehaviour
         {
             c.enabled = true;
         }
+
+        dissolveValue = origDissolve;
+
+        foreach (SkinnedMeshRenderer smr in dissolveObjs)
+        {
+            foreach (Material m in smr.materials)
+            {
+                m.SetFloat("_CutoffHeight", dissolveValue);
+            }
+        }
+
+        //GetComponent<NavMeshAgent>().isStopped = false;
+        particles.SetActive(true);
     }
 }
