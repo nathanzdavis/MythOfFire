@@ -65,6 +65,8 @@
     <Compile Include="Assets\DefaultHDRP\SampleSceneAssets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\WeatherEffects.cs" />
     <Compile Include="Assets\OptionsController.cs" />
+    <Compile Include="Assets\MenuController.cs" />
+    <Compile Include="Assets\WaveController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

@@ -27,15 +27,15 @@ public class MonsterController : MonoBehaviour
     bool canAttack = true;
     public float attackDelay;
     bool aggro;
-    private GameObject target;
+    public GameObject target;
     bool dying;
     bool withinAttackRange;
     public float swingDelay;
+    public bool attacking;
     public Transform healthBar;
     public Transform healthSlider;
     public float respawnTime;
     public int lives;
-    public Text monsterLives;
     public bool useLives;
     public Transform spawnpoint;
     public Transform textSpawn;
@@ -57,6 +57,18 @@ public class MonsterController : MonoBehaviour
     public GameObject particles;
     bool waiting;
 
+    public bool isGrounded;
+    public float groundCheckDistance = 0.1f;
+    public Vector3 groundNormal;
+    public LayerMask groundLayer;
+
+    public GameObject warnings;
+
+    public bool patrol;
+
+    public int waveID;
+
+
     void Start()
     {
         for (int i = 0; i < rendererObjs.Length; i++)
@@ -66,12 +78,14 @@ public class MonsterController : MonoBehaviour
                 origColors[i].nestedColors.Add(m.GetColor("_Color"));
             }
         }
-        
-
-        if (useLives)
-        monsterLives.text = lives.ToString();
+       
 
         origDissolve = dissolveValue;
+    }
+
+    private void FixedUpdate()
+    {
+        CheckGroundStatus();
     }
 
     void Update()
@@ -79,10 +93,33 @@ public class MonsterController : MonoBehaviour
         velocity = ((transform.position - previous).magnitude) / Time.deltaTime;
         previous = transform.position;
 
-        print(velocity);
         if (health > 0)
         {
-            if (velocity > 2 || velocity < -2)
+
+            if (aggro && withinAttackRange)
+            {
+                waiting = false;
+                anim.SetBool("moving", false);
+            }
+
+            if (aggro && !withinAttackRange)
+            {
+                waiting = false;
+                anim.SetBool("moving", true);
+            }
+
+            if (!aggro && !withinAttackRange && !waiting)
+            {
+                anim.SetBool("moving", true);
+            }
+
+            if (!aggro && !withinAttackRange && waiting)
+            {
+                anim.SetBool("moving", false);
+            }
+
+            /*
+            if (velocity > 3f || velocity < -3f)
             {
                 anim.SetBool("moving", true);
             }
@@ -90,6 +127,8 @@ public class MonsterController : MonoBehaviour
             {
                 anim.SetBool("moving", false);
             }
+            */
+
             MoveToNextPoint();
             healthSlider.localScale = new Vector3 (healthSlider.localScale.x, healthSlider.localScale.y, (float)health / 100);
         }
@@ -103,6 +142,11 @@ public class MonsterController : MonoBehaviour
 
         if (aggro && canAttack && withinAttackRange && health > 0)
         {
+            if (!target.GetComponent<Player>().currentEnemiesAttackingUs.Contains(gameObject))
+                target.GetComponent<Player>().currentEnemiesAttackingUs.Add(gameObject);
+
+            attacking = true;
+            warnings.SetActive(true);
             anim.SetTrigger("attack");
             canAttack = false;
             Invoke("dealDamage", swingDelay);
@@ -110,18 +154,11 @@ public class MonsterController : MonoBehaviour
             if (target.GetComponent<Player>().health <= 0)
             {
                 aggro = false;
+                withinAttackRange = false;
+                attacking = false;
+                canAttack = false;
+                CancelInvoke();
             }
-            //anim.SetBool("moving", false);
-        }
-
-        if (waiting && !withinAttackRange)
-        {
-            anim.SetBool("moving", false);
-        }
-
-        if (aggro)
-        {
-            waiting = false;
         }
     }
 
@@ -143,55 +180,79 @@ public class MonsterController : MonoBehaviour
     void dealDamage()
     {
         if (withinAttackRange)
+        {
             target.GetComponent<Player>().Damage(damage);
+            attacking = false;
+        }
+        else
+        {
+            if (target)
+            {
+                if (attacking && Mathf.Abs(transform.position.x - target.transform.position.x) <= 5)
+                {
+                    target.GetComponent<Player>().Damage(damage);
+                    attacking = false;
+                }
+            }
+        }
+
+        warnings.SetActive(false);
+    }
+
+    public void Parried()
+    {
+        warnings.SetActive(false);
+        attacking = false;
+        CancelInvoke();
+        GetComponent<Animator>().SetTrigger("Hit");
+        Invoke("resetAttack", attackDelay);
     }
 
     void resetAttack()
     {
         canAttack = true;
+        warnings.SetActive(false);
     }
 
     void MoveToNextPoint()
     {
-        Transform targetPoint = points[index];
+        if (isGrounded)
+        {
+            Transform targetPoint = points[index];
 
-        if (!aggro)
-        {
-            
-            if (targetPoint.transform.position.x > transform.position.x)
-                rigObj.transform.localEulerAngles = new Vector3(0, 180, 0);
-            else
-                rigObj.transform.localEulerAngles = new Vector3(0, 0, 0);
-            
-            //GetComponent<NavMeshAgent>().destination = targetPoint.position;
-            transform.position = Vector3.MoveTowards(transform.position, targetPoint.position, speed * Time.deltaTime);
-            if ((transform.position.x - targetPoint.position.x < 0.2f) && !reachedPoint)
+            if (!aggro && patrol)
             {
-                waiting = true;
-                Invoke("switchPoint", idleTime);
-                reachedPoint = true;
-                //anim.SetBool("moving", false);
+
+                if (targetPoint.transform.position.x > transform.position.x)
+                    rigObj.transform.localEulerAngles = new Vector3(0, 180, 0);
+                else
+                    rigObj.transform.localEulerAngles = new Vector3(0, 0, 0);
+
+                //GetComponent<NavMeshAgent>().destination = targetPoint.position;
+                transform.position = Vector3.MoveTowards(transform.position, targetPoint.position, speed * Time.deltaTime);
+                if ((Mathf.Abs(transform.position.x - targetPoint.position.x) < 0.1f) && !reachedPoint)
+                {
+                    waiting = true;
+                    Invoke("switchPoint", idleTime);
+                    reachedPoint = true;
+                    //anim.SetBool("moving", false);
+                }
+                //print("Distance from next waypoint: " + Vector3.Distance(transform.position, targetPoint.position));
             }
-            //print("Distance from next waypoint: " + Vector3.Distance(transform.position, targetPoint.position));
-        }
-        else if (!withinAttackRange)
-        {
+            else if (!withinAttackRange)
+            {
+                //GetComponent<NavMeshAgent>().destination = target.transform.position;
+                transform.position = Vector3.MoveTowards(transform.position, target.transform.position, speed * Time.deltaTime);
+
+                //CancelInvoke("move");
+                //Invoke("move", 1f);
+
+            }
             if (target.transform.position.x > transform.position.x)
                 rigObj.transform.localEulerAngles = new Vector3(0, 180, 0);
             else
                 rigObj.transform.localEulerAngles = new Vector3(0, 0, 0);
-
-            //GetComponent<NavMeshAgent>().destination = target.transform.position;
-            transform.position = Vector3.MoveTowards(transform.position, target.transform.position, speed * Time.deltaTime);
-
-            //CancelInvoke("move");
-            //Invoke("move", 1f);
-
-        }
-        else if (withinAttackRange)
-        {
-            //anim.SetBool("moving", false);
-        }
+        } 
     }
 
     void switchPoint()
@@ -231,9 +292,11 @@ public class MonsterController : MonoBehaviour
             withinAttackRange = false;
             col.transform.root.gameObject.GetComponent<Player>().insideEnemyHitbox = false;
             col.transform.root.gameObject.GetComponent<Player>().currentEnemyOnUs = null;
+            if (target.GetComponent<Player>().currentEnemiesAttackingUs.Contains(gameObject))
+                target.GetComponent<Player>().currentEnemiesAttackingUs.Remove(gameObject);
         }
 
-        if (col.transform.tag == "PlayerRange" && health > 0)
+        if (patrol && col.transform.tag == "PlayerRange" && health > 0)
         {
             aggro = false;
             healthBar.gameObject.SetActive(false);
@@ -287,7 +350,6 @@ public class MonsterController : MonoBehaviour
         if (useLives)
         {
             lives--;
-            monsterLives.text = lives.ToString();
         }
 
         if (target.GetComponent<Player>().currentEnemyOnUs == gameObject)
@@ -299,6 +361,23 @@ public class MonsterController : MonoBehaviour
         StartCoroutine("Dissolve");
         //GetComponent<NavMeshAgent>().isStopped = true;
         healthBar.gameObject.SetActive(false);
+        
+        if (waveID == 1)
+        {
+            WaveController.instance.enemyCountWave1--;
+        }
+
+        if (waveID == 2)
+        {
+            WaveController.instance.enemyCountWave2--;
+        }
+
+        if (waveID == 3)
+        {
+            WaveController.instance.enemyCountWave3--;
+        }
+
+        Destroy(gameObject, 5);
     }
 
     private IEnumerator Dissolve()
@@ -313,7 +392,7 @@ public class MonsterController : MonoBehaviour
                     m.SetFloat("_CutoffHeight", dissolveValue);
                 }
             }
-            yield return new WaitForSeconds(.05f);
+            yield return new WaitForSeconds(.1f);
         }
     }
 
@@ -364,5 +443,31 @@ public class MonsterController : MonoBehaviour
 
         //GetComponent<NavMeshAgent>().isStopped = false;
         particles.SetActive(true);
+    }
+
+    private void CheckGroundStatus()
+    {
+#if UNITY_EDITOR
+        // helper to visualise the ground check ray in the scene view
+        Debug.DrawLine(transform.position + (Vector3.up * 0.1f), transform.position + (Vector3.up * 0.1f) + (Vector3.down * groundCheckDistance));
+#endif
+        // 0.1f is a small offset to start the ray from inside the character
+        // it is also good to note that the transform position in the sample assets is at the base of the character
+        if (Physics.Raycast(transform.position + (Vector3.up * 0.1f), Vector3.down, groundCheckDistance, groundLayer))
+        {
+
+            isGrounded = true;
+            if (health > 0)
+            {
+                GetComponent<Animator>().SetBool("Die", false);
+            }
+        }
+        else
+        {
+            isGrounded = false;
+            groundNormal = Vector3.up;
+        }
+
+        anim.SetBool("InAir", !isGrounded);
     }
 }

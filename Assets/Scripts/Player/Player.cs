@@ -45,6 +45,7 @@ public class Player : MonoBehaviour
     public Cinemachine.CinemachineImpulseSource impulseLand;
     public AudioClip jumpSound;
     public float gravity = -9.81f;
+    private float originalGravity;
     public float hitAngleDown;
 
     [Header("Wall Check")]
@@ -77,6 +78,9 @@ public class Player : MonoBehaviour
     public float damageForce;
     public GameObject damagePopup;
     public GameObject dashEffect;
+    private bool airJuggleAttacking;
+    private bool downwardsAttack;
+    private bool parrying;
 
     [Header("Slide")]
     public AudioClip slideSound;
@@ -88,6 +92,7 @@ public class Player : MonoBehaviour
     [Header("AirControl")]
     public float airFriction;
     public float airControlForce;
+    private float originalAirControlForce;
 
     [Header("Sword")]
     public GameObject sword;
@@ -101,10 +106,24 @@ public class Player : MonoBehaviour
 
     [Header("Health")]
     public int health = 100;
+    public bool regen;
+    public float timeBeforeRegenAfterHit;
+    public float regenSpeed;
+    private bool dead;
+    public GameObject[] deactivateOnDeath;
+
+    [Header("Embers")]
+    public int embers;
+    public bool style1;
+    public bool style2;
+    private bool styleToggle;
+    public GameObject[] fireEffects;
+    public AudioClip emberActivate;
 
     [Header("Debug")]
     public bool insideEnemyHitbox;
     public GameObject currentEnemyOnUs;
+    public List<GameObject> currentEnemiesAttackingUs = new List<GameObject>();
 
     private void Awake()
     {
@@ -129,7 +148,7 @@ public class Player : MonoBehaviour
         {
             if (isGrounded)
                 HandleAttack();
-            else
+            else if (!isGrounded)
                 HandleAirAttack();
         };
 
@@ -143,6 +162,12 @@ public class Player : MonoBehaviour
         input.Player.Slide.performed += ctx =>
         {
             HandleSlide();
+        };
+
+        //Style input pressed
+        input.Player.SwitchStyle.performed += ctx =>
+        {
+            HandleStyleSwitch();
         };
 
         //Attack input pressed
@@ -166,7 +191,8 @@ public class Player : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
         origGroundCheckDist = groundCheckDistance;
         chestOffsetOrig = spineBone.localEulerAngles.y;
-
+        originalGravity = gravity;
+        originalAirControlForce = airControlForce;
     }
 
     private void OnEnable()
@@ -186,22 +212,43 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        UIController.instance.health.value = (float)health / 100;
+        if (!dead)
+        {
+            UIController.instance.health.value = (float)health / 100;
+            UIController.instance.embers.value = (float)embers / 100;
+
+            if (embers == 100 && !style2)
+            {
+                UIController.instance.emberSymbol.SetActive(true);
+            }
+            else
+            {
+                UIController.instance.emberSymbol.SetActive(false);
+            }
+
+            if (embers >= 100)
+            {
+                embers = 100;
+            }
+        }
     }
 
     private void FixedUpdate()
     {
-        HandleMovement();
-        HandleInAir();
-        CheckGroundStatus();
-        CheckIfWall();
+        if (!dead)
+        {
+            HandleMovement();
+            HandleInAir();
+            CheckGroundStatus();
+            CheckIfWall();
 
-        //For debugging
-        velocity = GetComponent<Rigidbody>().velocity;
-        magnitude = velocity.normalized.magnitude;
+            //For debugging
+            velocity = GetComponent<Rigidbody>().velocity;
+            magnitude = velocity.normalized.magnitude;
 
-        //Gravity
-        GetComponent<Rigidbody>().AddForce(Vector3.down * gravity);
+            //Gravity
+            GetComponent<Rigidbody>().AddForce(Vector3.down * gravity);
+        }
     }
 
     //All movement update logic
@@ -362,8 +409,9 @@ public class Player : MonoBehaviour
     //Add jump force
     private void HandleJump()
     {
-        if (isGrounded)
+        if (embers >= 10 && style2 && isGrounded && insideEnemyHitbox && currentEnemyOnUs && currentEnemyOnUs.GetComponent<MonsterController>().health > 0)
         {
+            //Normal jump stuff
             anim.applyRootMotion = false;
             anim.SetTrigger("Jump");
             generateCameraShakeJump();
@@ -371,11 +419,40 @@ public class Player : MonoBehaviour
             groundCheckDistance = .001f;
             Invoke(nameof(ResetGroundCheck), .1f);
             audioSource.PlayOneShot(jumpSound);
+            GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight / 1.5f);
 
+            //Air juggling/attack
+            gravity = 0;
+            currentEnemyOnUs.GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight / 1.5f);
+            airControlForce = 0;
+            airJuggleAttacking = true;
+
+            Invoke("ResetAllAirAttackStuff", 2f);
+            return;
+        }
+
+        if (isGrounded)
+        {
+            //Normal jump
+            anim.applyRootMotion = false;
+            anim.SetTrigger("Jump");
+            generateCameraShakeJump();
+            jumped = true;
+            groundCheckDistance = .001f;
+            Invoke(nameof(ResetGroundCheck), .1f);
+            audioSource.PlayOneShot(jumpSound);
             GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight);
 
             //UIController.instance.healthText.text = "50";
         }
+    }
+
+    private void ResetAllAirAttackStuff()
+    {
+        gravity = originalGravity;
+        airControlForce = originalAirControlForce;
+
+        airJuggleAttacking = false;
     }
 
     //Attack
@@ -449,27 +526,52 @@ public class Player : MonoBehaviour
 
             attacked = true;
             Invoke(nameof(AttackReset), cooldownBetweenAttacks);
+            downwardsAttack = true;
         }
-        else if (!isGrounded && !attacked)
+        else if (_move.y >= 0 && airJuggleAttacking)
         {
-            //Do normal floaty air attack stuff
+            anim.SetTrigger("Attack1");
+            generateCameraShake();
+            audioSource.PlayOneShot(attackSound);
+            attacked = true;
+            Invoke(nameof(AttackReset), cooldownBetweenAttacks);
         }
     }
 
     //Guard
     private void HandleGuard()
     {
-        if (insideEnemyHitbox)
+        if (insideEnemyHitbox && !parrying)
         {
-            anim.SetTrigger("Parry");
+            foreach (GameObject go in currentEnemiesAttackingUs)
+            {
+                if (go == null)
+                {
+                    currentEnemiesAttackingUs.Remove(go);
+                }
+                if (go && go.GetComponent<MonsterController>().attacking)
+                {
+                    anim.SetTrigger("Parry");
+                    parrying = true;
+                    embers += 5;
+                    return;
+                }
+            }
         }
     }
 
     public void ParryEffects()
     {
         audioSource.PlayOneShot(swordParrys[Random.Range(0, swordParrys.Length)]);
-        currentEnemyOnUs.GetComponent<Rigidbody>().velocity = Vector3.zero;
-        currentEnemyOnUs.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+
+        foreach(GameObject go in currentEnemiesAttackingUs)
+        {
+            go.GetComponent<Rigidbody>().velocity = Vector3.zero;
+            go.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+            go.GetComponent<MonsterController>().Parried();
+        }
+
+        parrying = false;
     }
 
     /*
@@ -512,6 +614,44 @@ public class Player : MonoBehaviour
             //UIController.instance.healthText.text = "50";
         }
     }
+
+    //Style Swap
+    private void HandleStyleSwitch()
+    {
+        if (!styleToggle)
+        {
+            if (embers == 100)
+            {
+                style2 = true;
+                style1 = false;
+
+                foreach(GameObject go in fireEffects)
+                {
+                    go.SetActive(true);
+                }
+
+                GetComponent<AudioSource>().PlayOneShot(emberActivate);
+
+                UIController.instance.emberSymbol.SetActive(false);
+            }
+            else
+            {
+                return;
+            }
+        }
+        else
+        {
+            style2 = false;
+            style1 = true;
+
+            foreach (GameObject go in fireEffects)
+            {
+                go.SetActive(false);
+            }
+        }
+        styleToggle = !styleToggle;
+    }
+
 
     private void ResetSlide()
     {
@@ -568,10 +708,51 @@ public class Player : MonoBehaviour
     {
         if (sword.GetComponent<SwordHitbox>().inTarget && sword.GetComponent<SwordHitbox>().currentTarget != null && sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health > 0)
         {
-            audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
-            impulseSword.GenerateImpulse(Camera.main.transform.forward);
-            sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().Damage(damage);
-            sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+            if (!airJuggleAttacking)
+            {
+                audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+                impulseSword.GenerateImpulse(Camera.main.transform.forward);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().Damage(damage);
+                if (sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health <= 0)
+                {
+                    embers += 15;
+                }
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+            }
+            else if (!downwardsAttack)
+            {
+                //Not downwards air juggle attack
+                audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+                impulseSword.GenerateImpulse(Camera.main.transform.forward);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().Damage(damage * 2);
+                if (sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health <= 0)
+                {
+                    embers += 5;
+                }
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.up * damageForce / 2);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Animator>().SetBool("Die", true);
+                airJuggleAttacking = false;
+                embers -= 10;
+            }
+            else
+            {
+                //Downwards air juggle attack
+                audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+                impulseSword.GenerateImpulse(Camera.main.transform.forward);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().Damage(damage * 2);
+                if (sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health <= 0)
+                {
+                    embers += 5;
+                }
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce * 1.5f);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(Vector3.down * damageForce * 1.5f);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Animator>().SetBool("Die", true);
+                airJuggleAttacking = false;
+                downwardsAttack = false;
+                embers -= 10;
+            }
+
         }
     }
 
@@ -625,10 +806,51 @@ public class Player : MonoBehaviour
 
     public void Damage(int damage)
     {
+        StopCoroutine("Regen");
+        CancelInvoke("StartRegen");
         health -= damage;
         if (health <= 0)
         {
             UIController.instance.health.value = 0;
+            Die();
+            return;
         }
+
+        if (regen)
+        {
+            Invoke("StartRegen", timeBeforeRegenAfterHit);  
+        }
+    }
+
+    private void StartRegen()
+    {
+        StartCoroutine("Regen");
+    }
+
+    private IEnumerator Regen()
+    {
+        while (health <= 100)
+        {
+            health++;
+
+            yield return new WaitForSeconds(regenSpeed);
+        }
+    }
+
+    public void Die()
+    {
+        GetComponent<Animator>().SetTrigger("Die");
+        dead = true;
+        GetComponent<Animator>().applyRootMotion = false;
+        GetComponent<IKFeet>().enabled = false;
+        input.Player.Disable();
+        UIController.instance.deathscreen.SetActive(true);
+
+        foreach(GameObject go in deactivateOnDeath)
+        {
+            go.SetActive(false);
+        }
+
+        OptionsController.instance.UnLockCursor();
     }
 }

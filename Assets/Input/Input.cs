@@ -134,6 +134,15 @@ public partial class @Input : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SwitchStyle"",
+                    ""type"": ""Button"",
+                    ""id"": ""b25e73ea-9103-47b8-9a72-66b01b6495a3"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -508,6 +517,28 @@ public partial class @Input : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse"",
                     ""action"": ""Guard"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""36f59d20-fd68-42a4-9525-63fab6048605"",
+                    ""path"": ""<Keyboard>/t"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SwitchStyle"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""13ece881-395c-47fd-a537-1cd3a9c136fb"",
+                    ""path"": ""<Gamepad>/buttonNorth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SwitchStyle"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1138,6 +1169,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         m_Player_SheatheUnsheathe = m_Player.FindAction("Sheathe/Unsheathe", throwIfNotFound: true);
         m_Player_RollLeft = m_Player.FindAction("RollLeft", throwIfNotFound: true);
         m_Player_RollRight = m_Player.FindAction("RollRight", throwIfNotFound: true);
+        m_Player_SwitchStyle = m_Player.FindAction("SwitchStyle", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1222,6 +1254,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_SheatheUnsheathe;
     private readonly InputAction m_Player_RollLeft;
     private readonly InputAction m_Player_RollRight;
+    private readonly InputAction m_Player_SwitchStyle;
     public struct PlayerActions
     {
         private @Input m_Wrapper;
@@ -1238,6 +1271,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         public InputAction @SheatheUnsheathe => m_Wrapper.m_Player_SheatheUnsheathe;
         public InputAction @RollLeft => m_Wrapper.m_Player_RollLeft;
         public InputAction @RollRight => m_Wrapper.m_Player_RollRight;
+        public InputAction @SwitchStyle => m_Wrapper.m_Player_SwitchStyle;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1283,6 +1317,9 @@ public partial class @Input : IInputActionCollection2, IDisposable
                 @RollRight.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnRollRight;
                 @RollRight.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnRollRight;
                 @RollRight.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnRollRight;
+                @SwitchStyle.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSwitchStyle;
+                @SwitchStyle.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSwitchStyle;
+                @SwitchStyle.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSwitchStyle;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -1323,6 +1360,9 @@ public partial class @Input : IInputActionCollection2, IDisposable
                 @RollRight.started += instance.OnRollRight;
                 @RollRight.performed += instance.OnRollRight;
                 @RollRight.canceled += instance.OnRollRight;
+                @SwitchStyle.started += instance.OnSwitchStyle;
+                @SwitchStyle.performed += instance.OnSwitchStyle;
+                @SwitchStyle.canceled += instance.OnSwitchStyle;
             }
         }
     }
@@ -1499,6 +1539,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         void OnSheatheUnsheathe(InputAction.CallbackContext context);
         void OnRollLeft(InputAction.CallbackContext context);
         void OnRollRight(InputAction.CallbackContext context);
+        void OnSwitchStyle(InputAction.CallbackContext context);
     }
     public interface IUIActions
     {
