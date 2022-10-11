@@ -18523,7 +18523,7 @@ MonoBehaviour:
   deactivateOnDeath:
   - {fileID: 692929705}
   - {fileID: 650452433}
-  embers: 0
+  embers: 100
   style1: 0
   style2: 0
   fireEffects:
@@ -23939,8 +23939,14 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 1
+  explosionRadius: 0
+  explosionForce: 0
+  explosionDamage: 0
+  explosionSound: {fileID: 0}
+  explosion: {fileID: 0}
   warnings: {fileID: 311443655}
   patrol: 0
+  thrown: 0
   waveID: 0
 --- !u!54 &612708365
 Rigidbody:
@@ -24187,7 +24193,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &630677871
 RectTransform:
   m_ObjectHideFlags: 0
@@ -60119,7 +60125,7 @@ MonoBehaviour:
   enemyCountWave1: 5
   enemyCountWave2: 10
   enemyCountWave3: 15
-  timeBetweenWaves1: 5
+  timeBetweenWaves1: 8
   timeBetweenEnemies1: 10
   timeBetweenEnemies2: 8
   timeBetweenEnemies3: 7.5

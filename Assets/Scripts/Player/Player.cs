@@ -124,6 +124,7 @@ public class Player : MonoBehaviour
     public bool insideEnemyHitbox;
     public GameObject currentEnemyOnUs;
     public List<GameObject> currentEnemiesAttackingUs = new List<GameObject>();
+    private bool slowMoToggle;
 
     private void Awake()
     {
@@ -182,6 +183,11 @@ public class Player : MonoBehaviour
                 anim.SetFloat("Speed", 1);
             }
             speedToggle = !speedToggle;
+        };
+
+        input.Player.SlowMo.performed += ctx =>
+        {
+            HandleSlowMo();
         };
     }
     private void Start()
@@ -631,7 +637,8 @@ public class Player : MonoBehaviour
                 }
 
                 GetComponent<AudioSource>().PlayOneShot(emberActivate);
-
+                generateCameraShake();
+                generateCameraShake();
                 UIController.instance.emberSymbol.SetActive(false);
             }
             else
@@ -731,7 +738,7 @@ public class Player : MonoBehaviour
                 }
                 sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
                 sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.up * damageForce / 2);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Animator>().SetBool("Die", true);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Animator>().SetTrigger("Die");
                 airJuggleAttacking = false;
                 embers -= 10;
             }
@@ -741,13 +748,14 @@ public class Player : MonoBehaviour
                 audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
                 impulseSword.GenerateImpulse(Camera.main.transform.forward);
                 sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().Damage(damage * 2);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().thrown = true;
                 if (sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health <= 0)
                 {
                     embers += 5;
                 }
                 sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce * 1.5f);
                 sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(Vector3.down * damageForce * 1.5f);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Animator>().SetBool("Die", true);
+                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Animator>().SetTrigger("Die");
                 airJuggleAttacking = false;
                 downwardsAttack = false;
                 embers -= 10;
@@ -852,5 +860,18 @@ public class Player : MonoBehaviour
         }
 
         OptionsController.instance.UnLockCursor();
+    }
+
+    public void HandleSlowMo()
+    {
+        if (!slowMoToggle)
+        {
+            Time.timeScale = .5f;
+        }
+        else
+        {
+            Time.timeScale = 1;
+        }
+        slowMoToggle = !slowMoToggle;
     }
 }

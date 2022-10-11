@@ -62,10 +62,15 @@ public class MonsterController : MonoBehaviour
     public Vector3 groundNormal;
     public LayerMask groundLayer;
 
+    public float explosionRadius;
+    public float explosionForce;
+    public int explosionDamage;
+    public AudioClip explosionSound;
+    public GameObject explosion;
     public GameObject warnings;
 
     public bool patrol;
-
+    public bool thrown;
     public int waveID;
 
 
@@ -162,6 +167,11 @@ public class MonsterController : MonoBehaviour
         }
     }
 
+    private void LateUpdate()
+    {
+        anim.SetBool("Alive", health > 0);
+    }
+
     //Logic for turning
     private void Turn()
     {
@@ -242,16 +252,24 @@ public class MonsterController : MonoBehaviour
             else if (!withinAttackRange)
             {
                 //GetComponent<NavMeshAgent>().destination = target.transform.position;
-                transform.position = Vector3.MoveTowards(transform.position, target.transform.position, speed * Time.deltaTime);
+                if (target)
+                    transform.position = Vector3.MoveTowards(transform.position, target.transform.position, speed * Time.deltaTime);
 
                 //CancelInvoke("move");
                 //Invoke("move", 1f);
-
             }
-            if (target.transform.position.x > transform.position.x)
-                rigObj.transform.localEulerAngles = new Vector3(0, 180, 0);
-            else
-                rigObj.transform.localEulerAngles = new Vector3(0, 0, 0);
+
+            if (target)
+            {
+                if (target.transform.position.x > transform.position.x)
+                    rigObj.transform.localEulerAngles = new Vector3(0, 180, 0);
+                else
+                    rigObj.transform.localEulerAngles = new Vector3(0, 0, 0);
+            }else if (!patrol)
+            {
+                anim.SetBool("moving", false);
+            }
+
         } 
     }
 
@@ -281,7 +299,8 @@ public class MonsterController : MonoBehaviour
             target = col.transform.root.gameObject;
             withinAttackRange = true;
             col.transform.root.gameObject.GetComponent<Player>().insideEnemyHitbox = true;
-            col.transform.root.gameObject.GetComponent<Player>().currentEnemyOnUs = gameObject;
+            if (!col.transform.root.gameObject.GetComponent<Player>().currentEnemyOnUs)
+                col.transform.root.gameObject.GetComponent<Player>().currentEnemyOnUs = gameObject;
         }
     }
 
@@ -291,7 +310,8 @@ public class MonsterController : MonoBehaviour
         {
             withinAttackRange = false;
             col.transform.root.gameObject.GetComponent<Player>().insideEnemyHitbox = false;
-            col.transform.root.gameObject.GetComponent<Player>().currentEnemyOnUs = null;
+            if (col.transform.root.gameObject.GetComponent<Player>().currentEnemyOnUs == gameObject)
+                col.transform.root.gameObject.GetComponent<Player>().currentEnemyOnUs = null;
             if (target.GetComponent<Player>().currentEnemiesAttackingUs.Contains(gameObject))
                 target.GetComponent<Player>().currentEnemiesAttackingUs.Remove(gameObject);
         }
@@ -345,7 +365,7 @@ public class MonsterController : MonoBehaviour
     public void Die()
     {
         dying = true;
-        anim.SetBool("Die", true);
+        anim.SetTrigger("Die");
         Invoke("Deactivate", .8f);
         if (useLives)
         {
@@ -421,7 +441,6 @@ public class MonsterController : MonoBehaviour
         GetComponent<CapsuleCollider>().enabled = true;
         GetComponent<Rigidbody>().isKinematic = false;
         dying = false;
-        anim.SetBool("Die", false);
         health = 100;
         transform.position = spawnpoint.position;
 
@@ -455,12 +474,12 @@ public class MonsterController : MonoBehaviour
         // it is also good to note that the transform position in the sample assets is at the base of the character
         if (Physics.Raycast(transform.position + (Vector3.up * 0.1f), Vector3.down, groundCheckDistance, groundLayer))
         {
-
-            isGrounded = true;
-            if (health > 0)
+            if (!isGrounded && health <= 0 && thrown)
             {
-                GetComponent<Animator>().SetBool("Die", false);
+                StartCoroutine(HandleExplosion());
             }
+            isGrounded = true;
+            thrown = false;
         }
         else
         {
@@ -469,5 +488,33 @@ public class MonsterController : MonoBehaviour
         }
 
         anim.SetBool("InAir", !isGrounded);
+    }
+
+    private IEnumerator HandleExplosion()
+    {
+        GameObject explosionSpawn = Instantiate(explosion, transform.position, transform.rotation);
+        GetComponent<AudioSource>().PlayOneShot(explosionSound);
+
+        float r = explosionRadius;
+        var cols = Physics.OverlapSphere(transform.position, r);
+        var rigidbodies = new List<Rigidbody>();
+        foreach (var col in cols)
+        {
+            if (col.attachedRigidbody != null && !rigidbodies.Contains(col.attachedRigidbody))
+            {
+                rigidbodies.Add(col.attachedRigidbody);
+            }
+        }
+        foreach (var rb in rigidbodies)
+        {
+            if (rb.transform.root.gameObject.GetComponent<MonsterController>())
+            {
+                rb.AddExplosionForce(explosionForce, transform.position, r, explosionForce / 2, ForceMode.Impulse);
+                rb.transform.root.gameObject.GetComponent<MonsterController>().Damage(explosionDamage);
+
+                yield return new WaitForSeconds(.1f);
+                rb.transform.root.gameObject.GetComponent<MonsterController>().anim.SetTrigger("Die");
+            }
+        }
     }
 }
