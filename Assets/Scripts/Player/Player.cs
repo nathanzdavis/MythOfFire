@@ -10,7 +10,7 @@ using TMPro;
 public class Player : MonoBehaviour
 {
     [Header("Input Manager")]
-    Input input;
+    [HideInInspector] public Input input;
 
     [Header("Animation")]
     private Animator anim;
@@ -111,6 +111,7 @@ public class Player : MonoBehaviour
     public float regenSpeed;
     private bool dead;
     public GameObject[] deactivateOnDeath;
+    bool fillingScreen;
 
     [Header("Embers")]
     public int embers;
@@ -235,6 +236,18 @@ public class Player : MonoBehaviour
             if (embers >= 100)
             {
                 embers = 100;
+            }
+
+            if (health <= 25 && !fillingScreen)
+            {
+                UIController.instance.StartCoroutine("fillScreen");
+                fillingScreen = true;
+            }
+
+            if (health > 25 && fillingScreen)
+            {
+                UIController.instance.StartCoroutine("defillScreen");
+                fillingScreen = false;
             }
         }
     }

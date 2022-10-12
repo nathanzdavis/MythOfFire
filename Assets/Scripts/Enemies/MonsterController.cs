@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.AI;
+using Cinemachine;
 
 [System.Serializable]
 public class serializableClass
@@ -73,6 +74,13 @@ public class MonsterController : MonoBehaviour
     public bool thrown;
     public int waveID;
 
+    public AudioClip hitWall;
+    public AudioClip grunt;
+
+    public CinemachineImpulseSource impulse;
+
+    bool disable;
+
 
     void Start()
     {
@@ -95,75 +103,82 @@ public class MonsterController : MonoBehaviour
 
     void Update()
     {
-        velocity = ((transform.position - previous).magnitude) / Time.deltaTime;
-        previous = transform.position;
-
-        if (health > 0)
+        if (!disable)
         {
+            velocity = ((transform.position - previous).magnitude) / Time.deltaTime;
+            previous = transform.position;
 
-            if (aggro && withinAttackRange)
+            if (health > 0)
             {
-                waiting = false;
-                anim.SetBool("moving", false);
-            }
 
-            if (aggro && !withinAttackRange)
-            {
-                waiting = false;
-                anim.SetBool("moving", true);
-            }
+                if (aggro && withinAttackRange)
+                {
+                    waiting = false;
+                    anim.SetBool("moving", false);
+                }
 
-            if (!aggro && !withinAttackRange && !waiting)
-            {
-                anim.SetBool("moving", true);
-            }
+                if (aggro && !withinAttackRange)
+                {
+                    waiting = false;
+                    anim.SetBool("moving", true);
+                }
 
-            if (!aggro && !withinAttackRange && waiting)
-            {
-                anim.SetBool("moving", false);
-            }
+                if (!aggro && !withinAttackRange && !waiting)
+                {
+                    anim.SetBool("moving", true);
+                }
 
-            /*
-            if (velocity > 3f || velocity < -3f)
-            {
-                anim.SetBool("moving", true);
+                if (!aggro && !withinAttackRange && waiting)
+                {
+                    anim.SetBool("moving", false);
+                }
+
+                /*
+                if (velocity > 3f || velocity < -3f)
+                {
+                    anim.SetBool("moving", true);
+                }
+                else
+                {
+                    anim.SetBool("moving", false);
+                }
+                */
+
+                MoveToNextPoint();
+                healthSlider.localScale = new Vector3(healthSlider.localScale.x, healthSlider.localScale.y, (float)health / 100);
             }
             else
             {
-                anim.SetBool("moving", false);
-            }
-            */
-
-            MoveToNextPoint();
-            healthSlider.localScale = new Vector3 (healthSlider.localScale.x, healthSlider.localScale.y, (float)health / 100);
-        }
-        else
-        {
-            healthSlider.localScale = new Vector3(healthSlider.localScale.x, healthSlider.localScale.y, 0);
-            aggro = false;
-            canAttack = false;
-        }
-
-
-        if (aggro && canAttack && withinAttackRange && health > 0)
-        {
-            if (!target.GetComponent<Player>().currentEnemiesAttackingUs.Contains(gameObject))
-                target.GetComponent<Player>().currentEnemiesAttackingUs.Add(gameObject);
-
-            attacking = true;
-            warnings.SetActive(true);
-            anim.SetTrigger("attack");
-            canAttack = false;
-            Invoke("dealDamage", swingDelay);
-            Invoke("resetAttack", attackDelay);
-            if (target.GetComponent<Player>().health <= 0)
-            {
+                healthSlider.localScale = new Vector3(healthSlider.localScale.x, healthSlider.localScale.y, 0);
                 aggro = false;
-                withinAttackRange = false;
-                attacking = false;
                 canAttack = false;
-                CancelInvoke();
             }
+
+
+            if (aggro && canAttack && withinAttackRange && health > 0)
+            {
+                if (!target.GetComponent<Player>().currentEnemiesAttackingUs.Contains(gameObject))
+                    target.GetComponent<Player>().currentEnemiesAttackingUs.Add(gameObject);
+
+                attacking = true;
+                warnings.SetActive(true);
+                anim.SetTrigger("attack");
+                canAttack = false;
+                Invoke("dealDamage", swingDelay);
+                Invoke("resetAttack", attackDelay);
+            }
+        }
+
+        if (target && target.GetComponent<Player>().health <= 0)
+        {
+            anim.SetBool("moving", false);
+            aggro = false;
+            withinAttackRange = false;
+            attacking = false;
+            canAttack = false;
+            CancelInvoke();
+            disable = true;
+            WaveController.instance.enabled = false;
         }
     }
 
@@ -348,6 +363,14 @@ public class MonsterController : MonoBehaviour
                 return;
             }
             anim.SetTrigger("Hit");
+
+            var chance = Random.Range(0, 3);
+
+            if (chance == 2)
+            {
+                GetComponent<AudioSource>().PlayOneShot(grunt);
+            }
+
         }
     }
 
@@ -364,6 +387,8 @@ public class MonsterController : MonoBehaviour
 
     public void Die()
     {
+        CancelInvoke("dealDamage");
+        warnings.SetActive(false);
         dying = true;
         anim.SetTrigger("Die");
         Invoke("Deactivate", .8f);
@@ -478,6 +503,11 @@ public class MonsterController : MonoBehaviour
             {
                 StartCoroutine(HandleExplosion());
             }
+
+            if (!isGrounded && health > 0 && thrown)
+            {
+                GetComponent<AudioSource>().PlayOneShot(hitWall);
+            }
             isGrounded = true;
             thrown = false;
         }
@@ -494,6 +524,8 @@ public class MonsterController : MonoBehaviour
     {
         GameObject explosionSpawn = Instantiate(explosion, transform.position, transform.rotation);
         GetComponent<AudioSource>().PlayOneShot(explosionSound);
+
+        impulse.GenerateImpulse();
 
         float r = explosionRadius;
         var cols = Physics.OverlapSphere(transform.position, r);

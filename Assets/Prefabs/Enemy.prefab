@@ -2583,6 +2583,7 @@ GameObject:
   - component: {fileID: 7061432626634062951}
   - component: {fileID: 7061432626634062952}
   - component: {fileID: 5012189591501258466}
+  - component: {fileID: 7863021423121550935}
   m_Layer: 11
   m_Name: Enemy
   m_TagString: Enemy
@@ -2611,7 +2612,7 @@ Transform:
   - {fileID: 4637684221931341884}
   - {fileID: 7061432628318109390}
   m_Father: {fileID: 0}
-  m_RootOrder: 13
+  m_RootOrder: 25
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!95 &7061432626634062950
 Animator:
@@ -2719,13 +2720,16 @@ MonoBehaviour:
     m_Bits: 1
   explosionRadius: 10
   explosionForce: 10
-  explosionDamage: 20
+  explosionDamage: 25
   explosionSound: {fileID: 8300000, guid: 5d92972ccba479242bafbaaf8bf86b48, type: 3}
   explosion: {fileID: 6255422756574311033, guid: 7e89acfc948960d4583a3dd37ace3108, type: 3}
   warnings: {fileID: 7061432628318109391}
   patrol: 0
   thrown: 0
   waveID: 0
+  hitWall: {fileID: 8300000, guid: 9bd8edbce69d0134ab083370ff79e606, type: 3}
+  grunt: {fileID: 8300000, guid: 0bab8393f6bbe38478a54e865e90e0e9, type: 3}
+  impulse: {fileID: 7863021423121550935}
 --- !u!195 &7061432626634062952
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -2760,7 +2764,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.15
+  m_Volume: 0.25
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -2844,6 +2848,59 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &7863021423121550935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7061432626634062878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 180ecf9b41d478f468eb3e9083753217, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ImpulseDefinition:
+    m_ImpulseChannel: 1
+    m_ImpulseShape: 3
+    m_CustomImpulseShape:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    m_ImpulseDuration: 0.2
+    m_ImpulseType: 0
+    m_DissipationRate: 0.25
+    m_RawSignal: {fileID: 0}
+    m_AmplitudeGain: 1
+    m_FrequencyGain: 1
+    m_RepeatMode: 0
+    m_Randomize: 1
+    m_TimeEnvelope:
+      m_AttackShape:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+      m_DecayShape:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+      m_AttackTime: 0
+      m_SustainTime: 0.2
+      m_DecayTime: 0.7
+      m_ScaleWithImpact: 1
+      m_HoldForever: 0
+    m_ImpactRadius: 100
+    m_DirectionMode: 0
+    m_DissipationMode: 2
+    m_DissipationDistance: 100
+    m_PropagationSpeed: 343
+  m_DefaultVelocity: {x: 0, y: -1, z: 0}
 --- !u!1 &7061432626643106021
 GameObject:
   m_ObjectHideFlags: 0

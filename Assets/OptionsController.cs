@@ -35,11 +35,17 @@ public class OptionsController : MonoBehaviour
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 optionsWindow.SetActive(true);
+                GameObject.FindGameObjectWithTag("Player").GetComponent<Player>()._move = Vector2.zero;
+                GameObject.FindGameObjectWithTag("Player").GetComponent<Player>().input.Player.Disable();
             }
             else
             {
-                LockCursor();
-                optionsWindow.SetActive(false);
+                if (GameObject.FindGameObjectWithTag("Player").GetComponent<Player>().health > 0)
+                {
+                    LockCursor();
+                    optionsWindow.SetActive(false);
+                    GameObject.FindGameObjectWithTag("Player").GetComponent<Player>().input.Player.Enable();
+                }
             }
             toggle = !toggle;
         };
@@ -59,6 +65,8 @@ public class OptionsController : MonoBehaviour
     public void ToggleMenu()
     {
         toggle = !toggle;
+        if (GameObject.FindGameObjectWithTag("Player").GetComponent<Player>().health > 0)
+            GameObject.FindGameObjectWithTag("Player").GetComponent<Player>().input.Player.Enable();
     }
 
     public void UnLockCursor()

@@ -43,6 +43,12 @@ public class WaveController : MonoBehaviour
         origEnemyCountWave1 = enemyCountWave1;
         origEnemyCountWave2 = enemyCountWave2;
         origEnemyCountWave3 = enemyCountWave3;
+        Invoke("WaveUI", timeBetweenWaves1 / 2);
+    }
+
+    private void WaveUI()
+    {
+        UIController.instance.gameObject.GetComponent<Animator>().SetTrigger("WaveChange");
     }
 
     private void HandleWave1()
@@ -119,6 +125,8 @@ public class WaveController : MonoBehaviour
             wave1complete = true;
             currentEnemyCounter = 0;
             UIController.instance.waveText.text = "2";
+            UIController.instance.waveText2.text = "2";
+            Invoke("WaveUI", timeBetweenWaves1 / 2);
         }
 
         if (enemyCountWave2 > 0 && wave1complete && !wave2complete)
@@ -136,6 +144,8 @@ public class WaveController : MonoBehaviour
             wave2complete = true;
             currentEnemyCounter = 0;
             UIController.instance.waveText.text = "3";
+            UIController.instance.waveText2.text = "3";
+            Invoke("WaveUI", timeBetweenWaves1 / 2);
         }
 
         if (enemyCountWave3 > 0 && wave1complete && wave2complete && !wave3complete)
