@@ -85,7 +85,7 @@ public class WaveController : MonoBehaviour
         print("Spawninig wave 2 enemies");
         while (currentEnemyCounter < origEnemyCountWave2)
         {
-            GameObject enemySpawn = Instantiate(wave2EnemyTypes[Random.Range(0, wave1EnemyTypes.Length)], spawns[Random.Range(0, spawns.Length)].position, Quaternion.identity);
+            GameObject enemySpawn = Instantiate(wave2EnemyTypes[Random.Range(0, wave2EnemyTypes.Length)], spawns[Random.Range(0, spawns.Length)].position, Quaternion.identity);
             enemySpawn.GetComponent<MonsterController>().target = GameObject.FindGameObjectWithTag("Player");
             enemySpawn.GetComponent<MonsterController>().waveID = 2;
             enemySpawn.transform.Rotate(0, -90, 0);
@@ -99,7 +99,7 @@ public class WaveController : MonoBehaviour
         print("Spawninig wave 3 enemies");
         while (currentEnemyCounter < origEnemyCountWave3)
         {
-            GameObject enemySpawn = Instantiate(wave3EnemyTypes[Random.Range(0, wave1EnemyTypes.Length)], spawns[Random.Range(0, spawns.Length)].position, Quaternion.identity);
+            GameObject enemySpawn = Instantiate(wave3EnemyTypes[Random.Range(0, wave3EnemyTypes.Length)], spawns[Random.Range(0, spawns.Length)].position, Quaternion.identity);
             enemySpawn.GetComponent<MonsterController>().target = GameObject.FindGameObjectWithTag("Player");
             enemySpawn.GetComponent<MonsterController>().waveID = 3;
             enemySpawn.transform.Rotate(0, -90, 0);

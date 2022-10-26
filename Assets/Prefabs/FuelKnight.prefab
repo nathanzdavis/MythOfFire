@@ -2585,7 +2585,7 @@ GameObject:
   - component: {fileID: 5012189591501258466}
   - component: {fileID: 7863021423121550935}
   m_Layer: 11
-  m_Name: Enemy
+  m_Name: FuelKnight
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
