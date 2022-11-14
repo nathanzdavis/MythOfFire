@@ -81,16 +81,22 @@ public class MonsterController : MonoBehaviour
 
     bool disable;
 
+    public bool useDissolve;
+
 
     void Start()
     {
-        for (int i = 0; i < rendererObjs.Length; i++)
+        if (useDissolve)
         {
-            foreach(Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+            for (int i = 0; i < rendererObjs.Length; i++)
             {
-                origColors[i].nestedColors.Add(m.GetColor("_Color"));
+                foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                {
+                    origColors[i].nestedColors.Add(m.GetColor("_Color"));
+                }
             }
         }
+
        
 
         origDissolve = dissolveValue;
@@ -348,11 +354,15 @@ public class MonsterController : MonoBehaviour
             dmgPopup.GetComponentInChildren<TextMeshPro>().text = damage.ToString();
 
             health -= damage;
-            for (int i = 0; i < rendererObjs.Length; i++)
+
+            if (useDissolve)
             {
-                foreach(Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                for (int i = 0; i < rendererObjs.Length; i++)
                 {
-                    m.SetColor("_Color", hitColor);
+                    foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                    {
+                        m.SetColor("_Color", hitColor);
+                    }
                 }
             }
 
@@ -376,11 +386,14 @@ public class MonsterController : MonoBehaviour
 
     void resetColor()
     {
-        for (int i = 0; i < rendererObjs.Length; i++)
+        if (useDissolve)
         {
-            for(int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+            for (int i = 0; i < rendererObjs.Length; i++)
             {
-                rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].SetColor("_Color", origColors[i].nestedColors[j]);
+                for (int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+                {
+                    rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].SetColor("_Color", origColors[i].nestedColors[j]);
+                }
             }
         }
     }

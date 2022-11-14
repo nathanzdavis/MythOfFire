@@ -79,6 +79,11 @@
     <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansImporter.cs" />
     <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansPostProcess.cs" />
     <Compile Include="Assets\LightningBolt\LightningBoltScript.cs" />
+    <Compile Include="Assets\SineMovement.cs" />
+    <Compile Include="Assets\LanternSpawner.cs" />
+    <Compile Include="Assets\IgnoreParent.cs" />
+    <Compile Include="Assets\CannonShooter.cs" />
+    <Compile Include="Assets\CannonBall.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

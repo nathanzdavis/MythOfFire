@@ -12,6 +12,7 @@ public class UIController : MonoBehaviour
     public Slider wave;
     public GameObject deathscreen;
     public GameObject emberSymbol;
+    public GameObject defaultSymbol;
     public GameObject gameOverScreen;
     public TextMeshProUGUI waveText;
     public TextMeshProUGUI waveText2;

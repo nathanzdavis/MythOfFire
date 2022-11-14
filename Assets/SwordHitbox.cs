@@ -8,6 +8,9 @@ public class SwordHitbox : MonoBehaviour
     public bool inTarget;
     private void OnTriggerEnter(Collider other)
     {
+        if (other.tag == "Player")
+            return;
+
         if (other.transform.tag == "Enemy")
         {
             inTarget = true;

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 866.31836, g: 980.8164, b: 1269.123, a: 1}
+  m_IndirectSpecularColor: {r: 866.29395, g: 980.80273, b: 1269.0879, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -8038,6 +8038,8 @@ MonoBehaviour:
   timeRangeStartSecs: 15
   timeRangeEndSecs: 45
   lightningSound: {fileID: 8300000, guid: bc924a889d2b5b04597b1f0e3f665c2e, type: 3}
+  lightningEffects: []
+  lightningEffectsHideTime: 0
 --- !u!82 &145207611
 AudioSource:
   m_ObjectHideFlags: 0
@@ -15520,8 +15522,18 @@ MonoBehaviour:
   slashEffectHits:
   - {fileID: 2652853128599054902, guid: 543be8ea98425564781ad9b335a18654, type: 3}
   health: 100
+  regen: 0
+  timeBeforeRegenAfterHit: 0
+  regenSpeed: 0
+  deactivateOnDeath: []
+  embers: 0
+  style1: 0
+  style2: 0
+  fireEffects: []
+  emberActivate: {fileID: 0}
   insideEnemyHitbox: 0
   currentEnemyOnUs: {fileID: 0}
+  currentEnemiesAttackingUs: []
 --- !u!54 &576370828
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -24256,6 +24268,12 @@ MonoBehaviour:
   health: {fileID: 1528948006}
   embers: {fileID: 0}
   wave: {fileID: 0}
+  deathscreen: {fileID: 0}
+  emberSymbol: {fileID: 0}
+  gameOverScreen: {fileID: 0}
+  waveText: {fileID: 0}
+  waveText2: {fileID: 0}
+  bloodyScreen: {fileID: 0}
 --- !u!1 &1447383738
 GameObject:
   m_ObjectHideFlags: 0
@@ -37321,12 +37339,13 @@ MonoBehaviour:
   damage: 15
   health: 100
   attackDelay: 3
+  target: {fileID: 0}
   swingDelay: 0.25
+  attacking: 0
   healthBar: {fileID: 542799862}
   healthSlider: {fileID: 1447383739}
   respawnTime: 5
   lives: 3
-  monsterLives: {fileID: 0}
   useLives: 0
   spawnpoint: {fileID: 304451625}
   textSpawn: {fileID: 564756173}
@@ -37347,6 +37366,24 @@ MonoBehaviour:
   - nestedColors: []
   - nestedColors: []
   particles: {fileID: 1472359679451398957}
+  isGrounded: 0
+  groundCheckDistance: 0.1
+  groundNormal: {x: 0, y: 0, z: 0}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  explosionRadius: 0
+  explosionForce: 0
+  explosionDamage: 0
+  explosionSound: {fileID: 0}
+  explosion: {fileID: 0}
+  warnings: {fileID: 0}
+  patrol: 0
+  thrown: 0
+  waveID: 0
+  hitWall: {fileID: 0}
+  grunt: {fileID: 0}
+  impulse: {fileID: 0}
 --- !u!95 &1987917127
 Animator:
   serializedVersion: 4

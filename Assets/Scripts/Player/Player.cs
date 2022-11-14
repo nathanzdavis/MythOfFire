@@ -227,10 +227,12 @@ public class Player : MonoBehaviour
             if (embers == 100 && !style2)
             {
                 UIController.instance.emberSymbol.SetActive(true);
+                UIController.instance.defaultSymbol.SetActive(false);
             }
             else
             {
                 UIController.instance.emberSymbol.SetActive(false);
+                UIController.instance.defaultSymbol.SetActive(true);
             }
 
             if (embers >= 100)
@@ -653,6 +655,7 @@ public class Player : MonoBehaviour
                 generateCameraShake();
                 generateCameraShake();
                 UIController.instance.emberSymbol.SetActive(false);
+                UIController.instance.defaultSymbol.SetActive(true);
             }
             else
             {
@@ -886,5 +889,15 @@ public class Player : MonoBehaviour
             Time.timeScale = 1;
         }
         slowMoToggle = !slowMoToggle;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.tag == "Lantern" && this.gameObject.name == "Player")
+        {
+            health += other.gameObject.GetComponent<SineMovement>().healthToRestore;
+            GetComponent<AudioSource>().PlayOneShot(other.gameObject.GetComponent<SineMovement>().lanternPickup);
+            Destroy(other.gameObject);
+        }
     }
 }

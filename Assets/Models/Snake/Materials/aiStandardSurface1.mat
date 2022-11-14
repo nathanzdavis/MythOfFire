@@ -91,7 +91,11 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: f2ae0c453da09264b8df61156c3992f4, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Mask:
+        m_Texture: {fileID: 2800000, guid: 96f615c4bfadbe342bdfaba8eb063bd8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MaskMap:
@@ -196,7 +200,7 @@ Material:
     - _CullMode: 0
     - _CullModeForward: 0
     - _Cutoff: 0
-    - _CutoffHeight: 1
+    - _CutoffHeight: 2
     - _DepthOffsetEnable: 0
     - _DetailAlbedoScale: 1
     - _DetailNormalMapScale: 1
@@ -316,7 +320,7 @@ Material:
     - _BaseColor: {r: 0.24705882, g: 0.11764706, b: 0.08235294, a: 1}
     - _BaseColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
     - _COAT_COLOR: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 0.24705878, g: 0.11764703, b: 0.082352914, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _DiffusionProfileAsset: {r: 0, g: 0, b: 0, a: 0}
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
     - _EMISSION_COLOR: {r: 0, g: 0, b: 0, a: 0}
