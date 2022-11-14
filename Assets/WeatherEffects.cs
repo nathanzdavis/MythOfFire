@@ -8,6 +8,9 @@ public class WeatherEffects : MonoBehaviour
     public float timeRangeStartSecs, timeRangeEndSecs;
     bool playing;
     public AudioClip lightningSound;
+    public GameObject[] lightningEffects;
+    public float lightningEffectsHideTime;
+
     // Update is called once per frame
     void Update()
     {
@@ -23,6 +26,20 @@ public class WeatherEffects : MonoBehaviour
         lightning.GetComponent<AudioSource>().PlayOneShot(lightningSound);
         GetComponent<Animator>().SetTrigger("lightning");
         Invoke("playingReset", 3f);
+
+        lightningEffects[Random.Range(0, lightningEffects.Length)].SetActive(true);
+        lightningEffects[Random.Range(0, lightningEffects.Length)].SetActive(true);
+        lightningEffects[Random.Range(0, lightningEffects.Length)].SetActive(true);
+
+        Invoke("HideAllLightning", lightningEffectsHideTime);
+    }
+
+    void HideAllLightning()
+    {
+        foreach(GameObject go in lightningEffects)
+        {
+            go.SetActive(false);
+        }
     }
 
     void playingReset()
