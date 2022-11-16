@@ -117,6 +117,6 @@ QualitySettings:
   m_PerPlatformDefaultQuality:
     PS4: 1
     Server: 0
-    Standalone: 1
+    Standalone: 0
     Windows Store Apps: 1
     XboxOne: 1

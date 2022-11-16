@@ -3159,7 +3159,7 @@ Transform:
   - {fileID: 3314720598824109885}
   - {fileID: 5764466086522142278}
   m_Father: {fileID: 0}
-  m_RootOrder: 42
+  m_RootOrder: 41
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!95 &3314720600277403029
 Animator:
@@ -3223,15 +3223,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bfd72155029e87643b894a7d752a8569, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enemyType: 0
   anim: {fileID: 3314720600277403029}
   points:
   - {fileID: 0}
   - {fileID: 0}
-  speed: 3
+  speed: 1.5
   idleTime: 5
   damage: 15
   health: 100
-  attackDelay: 3
+  attackDelay: 2
   target: {fileID: 0}
   swingDelay: 1
   attacking: 0
@@ -3255,8 +3256,9 @@ MonoBehaviour:
   - {fileID: 3314720600277403034}
   hitColor: {r: 0.8867924, g: 0, b: 0, a: 0}
   dissolveValue: 1
-  origColors:
+  origColorsKnight:
   - nestedColors: []
+  origColorsSnake:
   - nestedColors: []
   particles: {fileID: 4210478079245972479}
   isGrounded: 0
@@ -3278,6 +3280,8 @@ MonoBehaviour:
   grunt: {fileID: 8300000, guid: 0bab8393f6bbe38478a54e865e90e0e9, type: 3}
   impulse: {fileID: 2513130699950028708}
   useDissolve: 1
+  useRandomAttacks: 0
+  numerOfAttackAnims: 1
 --- !u!195 &3314720600277403035
 NavMeshAgent:
   m_ObjectHideFlags: 0

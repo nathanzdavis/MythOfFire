@@ -53,37 +53,42 @@
     <UnityVersion>2022.1.14f1</UnityVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansDecalTools.cs" />
+    <Compile Include="Assets\TurtleBossController.cs" />
+    <Compile Include="Assets\Scripts\Enemies\OffsetRotation.cs" />
+    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansMatertialUtils.cs" />
     <Compile Include="Assets\MenuController.cs" />
     <Compile Include="Assets\DestroyMe.cs" />
     <Compile Include="Assets\OptionsController.cs" />
+    <Compile Include="Assets\CannonBall.cs" />
+    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansPostProcess.cs" />
     <Compile Include="Assets\Constrain.cs" />
     <Compile Include="Assets\Input\Input.cs" />
+    <Compile Include="Assets\LanternSpawner.cs" />
     <Compile Include="Assets\Enemy.cs" />
+    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansImporter.cs" />
     <Compile Include="Assets\Scripts\Player\Player.cs" />
     <Compile Include="Assets\WeatherEffects.cs" />
+    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansImporterWindow.cs" />
+    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansTextureProcessor.cs" />
     <Compile Include="Assets\WaveController.cs" />
     <Compile Include="Assets\UIController.cs" />
     <Compile Include="Assets\Scripts\Enemies\MonsterController.cs" />
+    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansUtilities.cs" />
+    <Compile Include="Assets\MiniBossController.cs" />
     <Compile Include="Assets\Scripts\Player\IKFeet.cs" />
+    <Compile Include="Assets\Scripts\Enemies\BossController.cs" />
+    <Compile Include="Assets\Lantern.cs" />
+    <Compile Include="Assets\UnityPackages\JsonNetSample\JsonNetSample.cs" />
+    <Compile Include="Assets\LightningBolt\LightningBoltScript.cs" />
     <Compile Include="Assets\SwordHitbox.cs" />
     <Compile Include="Assets\DefaultHDRP\SampleSceneAssets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansTerrainTools.cs" />
-    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansUtilities.cs" />
-    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansBridgeLink.cs" />
-    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansMatertialUtils.cs" />
+    <Compile Include="Assets\BossTurtleAnimEvents.cs" />
     <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansMeshUtils.cs" />
-    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansDecalTools.cs" />
-    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansImporterWindow.cs" />
-    <Compile Include="Assets\UnityPackages\JsonNetSample\JsonNetSample.cs" />
-    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansTextureProcessor.cs" />
-    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansImporter.cs" />
-    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansPostProcess.cs" />
-    <Compile Include="Assets\LightningBolt\LightningBoltScript.cs" />
-    <Compile Include="Assets\SineMovement.cs" />
-    <Compile Include="Assets\LanternSpawner.cs" />
-    <Compile Include="Assets\IgnoreParent.cs" />
+    <Compile Include="Assets\Quixel\Scripts\BridgeImporter\MegascansBridgeLink.cs" />
     <Compile Include="Assets\CannonShooter.cs" />
-    <Compile Include="Assets\CannonBall.cs" />
+    <Compile Include="Assets\IgnoreParent.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

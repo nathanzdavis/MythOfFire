@@ -4,7 +4,9 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static UnityEngine.InputSystem.InputAction;
+using Cinemachine;
 using TMPro;
+
 
 [RequireComponent(typeof(PlayerInput))]
 public class Player : MonoBehaviour
@@ -30,6 +32,7 @@ public class Player : MonoBehaviour
     private float prevMovX;
     private bool speedToggle;
     public float runMultiplier;
+    public float maxVelocity;
     //bool turn2;
 
     [Header("Jump")]
@@ -42,7 +45,7 @@ public class Player : MonoBehaviour
     bool jumped;
     public LayerMask groundLayer;
     public float jumpHeight;
-    public Cinemachine.CinemachineImpulseSource impulseLand;
+    public CinemachineImpulseSource impulseLand;
     public AudioClip jumpSound;
     public float gravity = -9.81f;
     private float originalGravity;
@@ -58,7 +61,7 @@ public class Player : MonoBehaviour
     public Vector3 hitNormal;
 
     [Header("Feet Impacts/Sound")]
-    public Cinemachine.CinemachineImpulseSource impulseFeet;
+    public CinemachineImpulseSource impulseFeet;
     public Transform leftFoot;
     public Transform rightFoot;
     public GameObject dustParticle;
@@ -77,10 +80,24 @@ public class Player : MonoBehaviour
     public float dashAmount;
     public float damageForce;
     public GameObject damagePopup;
+    public Transform textSpawn;
     public GameObject dashEffect;
     private bool airJuggleAttacking;
     private bool downwardsAttack;
     private bool parrying;
+    public int groundSlamAttackCost;
+    public CinemachineImpulseSource impulseSlash;
+    public Vector3 hitboxRadius;
+    public Vector3 playerHitRadius;
+    private List<GameObject> parriedEnemies = new List<GameObject>();
+    public float parryCooldown;
+    public int groundSlamAttackDamage;
+    public AudioClip groundSlamSound;
+    public GameObject groundSlamEffect;
+    public int airAttackCost;
+    public int chargeAttackCost;
+    public int emberGainKill;
+    public int emberGainParry;
 
     [Header("Slide")]
     public AudioClip slideSound;
@@ -103,23 +120,34 @@ public class Player : MonoBehaviour
     public AudioClip[] swordParrys;
     public GameObject[] slashEffects;
     public GameObject[] slashEffectHits;
+    public GameObject fireSlash;
 
     [Header("Health")]
-    public int health = 100;
+    public float maxHealth;
+    public float health = 100;
     public bool regen;
     public float timeBeforeRegenAfterHit;
     public float regenSpeed;
     private bool dead;
     public GameObject[] deactivateOnDeath;
     bool fillingScreen;
+    public AudioClip[] damagedSounds;
 
     [Header("Embers")]
-    public int embers;
-    public bool style1;
-    public bool style2;
+    public float embers;
+    private bool style1 = true;
+    private bool style2;
     private bool styleToggle;
     public GameObject[] fireEffects;
     public AudioClip emberActivate;
+    public AudioClip emberActivate2;
+    public GameObject powerUpFire;
+    public ParticleSystem[] powerUpFireParticles;
+    public float timeBetweenEmberDissapation;
+    public float numEmbersToRemovePerCycle;
+    public float maxEmbers;
+    public AudioClip fireRanOut;
+    bool playedAudio;
 
     [Header("Debug")]
     public bool insideEnemyHitbox;
@@ -152,6 +180,12 @@ public class Player : MonoBehaviour
                 HandleAttack();
             else if (!isGrounded)
                 HandleAirAttack();
+        };
+
+        //Special Attack input pressed
+        input.Player.Special.performed += ctx =>
+        {
+            HandleSpecialAttack();
         };
 
         //Guard input pressed
@@ -228,16 +262,18 @@ public class Player : MonoBehaviour
             {
                 UIController.instance.emberSymbol.SetActive(true);
                 UIController.instance.defaultSymbol.SetActive(false);
+                playedAudio = false;
             }
-            else
+            else if (style1 && embers != 100)
             {
                 UIController.instance.emberSymbol.SetActive(false);
                 UIController.instance.defaultSymbol.SetActive(true);
-            }
+                if (!playedAudio)
+                {
+                    GetComponent<AudioSource>().PlayOneShot(fireRanOut);
+                    playedAudio = true;
+                }
 
-            if (embers >= 100)
-            {
-                embers = 100;
             }
 
             if (health <= 25 && !fillingScreen)
@@ -250,6 +286,21 @@ public class Player : MonoBehaviour
             {
                 UIController.instance.StartCoroutine("defillScreen");
                 fillingScreen = false;
+            }
+
+            if (embers <= 0 && style2)
+            {
+                HandleStyleSwitch();
+            }
+
+            if (embers >= maxEmbers)
+            {
+                embers = maxEmbers;
+            }
+
+            if (health >= maxHealth)
+            {
+                health = maxHealth;
             }
         }
     }
@@ -270,6 +321,8 @@ public class Player : MonoBehaviour
             //Gravity
             GetComponent<Rigidbody>().AddForce(Vector3.down * gravity);
         }
+
+        GetComponent<Rigidbody>().velocity = Vector3.ClampMagnitude(GetComponent<Rigidbody>().velocity, maxVelocity);
     }
 
     //All movement update logic
@@ -519,7 +572,10 @@ public class Player : MonoBehaviour
                     dashObj.transform.localPosition = new Vector3(0, 1, 0);
                 }
 
-                anim.SetTrigger("Attack" + Random.Range(1, 3));
+                if (style1)
+                    anim.SetTrigger("Attack" + Random.Range(1, 3));
+                else if (style2)
+                    anim.SetTrigger("Attack" + Random.Range(1, 6));
             }
             else if (canSlideAttack)
                 anim.SetTrigger("AttackSlide");
@@ -559,23 +615,48 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void HandleSpecialAttack()
+    {
+        if (embers >= groundSlamAttackCost && style2)
+        {
+            if (isGrounded && !attacked)
+            {
+                anim.SetTrigger("GroundSlam");
+                generateCameraShake();
+                audioSource.PlayOneShot(attackSound);
+                attacked = true;
+                Invoke(nameof(AttackReset), cooldownBetweenAttacks);
+            }
+        }
+    }
+
     //Guard
     private void HandleGuard()
     {
-        if (insideEnemyHitbox && !parrying)
+        var cols = Physics.OverlapBox(transform.position, playerHitRadius);
+        var rigidbodies = new List<Rigidbody>();
+        foreach (var col in cols)
         {
-            foreach (GameObject go in currentEnemiesAttackingUs)
+            if (col.attachedRigidbody != null && !rigidbodies.Contains(col.attachedRigidbody))
             {
-                if (go == null)
+                rigidbodies.Add(col.attachedRigidbody);
+            }
+        }
+        foreach (var rb in rigidbodies)
+        {
+            if (!parrying)
+            {
+                if (rb.GetComponent<MonsterController>())
                 {
-                    currentEnemiesAttackingUs.Remove(go);
-                }
-                if (go && go.GetComponent<MonsterController>().attacking)
-                {
-                    anim.SetTrigger("Parry");
-                    parrying = true;
-                    embers += 5;
-                    return;
+                    if (rb.GetComponent<MonsterController>().attacking)
+                    {
+                        parriedEnemies.Add(rb.gameObject);
+                        anim.SetTrigger("Parry");
+                        parrying = true;
+                        embers += emberGainParry;
+                        Invoke("ParryCooldown", parryCooldown);
+                        return;
+                    }
                 }
             }
         }
@@ -585,13 +666,17 @@ public class Player : MonoBehaviour
     {
         audioSource.PlayOneShot(swordParrys[Random.Range(0, swordParrys.Length)]);
 
-        foreach(GameObject go in currentEnemiesAttackingUs)
+        foreach(GameObject go in parriedEnemies.ToArray())
         {
             go.GetComponent<Rigidbody>().velocity = Vector3.zero;
             go.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
             go.GetComponent<MonsterController>().Parried();
+            parriedEnemies.Remove(go);
         }
+    }
 
+    private void ParryCooldown()
+    {
         parrying = false;
     }
 
@@ -654,8 +739,21 @@ public class Player : MonoBehaviour
                 GetComponent<AudioSource>().PlayOneShot(emberActivate);
                 generateCameraShake();
                 generateCameraShake();
-                UIController.instance.emberSymbol.SetActive(false);
-                UIController.instance.defaultSymbol.SetActive(true);
+                UIController.instance.emberFire.SetActive(true);
+                //UIController.instance.emberSymbol.SetActive(false);
+                //UIController.instance.defaultSymbol.SetActive(true);
+                anim.SetTrigger("PowerUp");
+                sword.GetComponent<AudioSource>().PlayOneShot(emberActivate2);
+                powerUpFire.SetActive(true);
+                foreach (ParticleSystem ps in powerUpFireParticles)
+                {
+                    ps.Play();
+                }
+                Invoke("StopPowerUpParticles", 1f);
+                anim.SetBool("Style2", true);
+                anim.SetBool("Style1", false);
+
+                StartCoroutine("EmberDissapation");
             }
             else
             {
@@ -671,8 +769,22 @@ public class Player : MonoBehaviour
             {
                 go.SetActive(false);
             }
+            anim.SetBool("Style2", false);
+            anim.SetBool("Style1", true);
+            StopCoroutine("EmberDissapation");
+            UIController.instance.emberFire.SetActive(false);
+            GetComponent<AudioSource>().PlayOneShot(fireRanOut);
         }
         styleToggle = !styleToggle;
+    }
+
+    private void StopPowerUpParticles()
+    {
+        foreach (ParticleSystem ps in powerUpFireParticles)
+        {
+            ps.Stop();
+        }
+        powerUpFire.SetActive(false);
     }
 
 
@@ -693,17 +805,17 @@ public class Player : MonoBehaviour
 
     public void generateCameraShake()
     {
-        impulseFeet.GenerateImpulse(Camera.main.transform.forward);
+        impulseFeet.GenerateImpulse();
     }
 
     public void generateCameraShakeLand()
     {
-        impulseLand.GenerateImpulse(Camera.main.transform.forward);
+        impulseLand.GenerateImpulse();
     }
 
     public void generateCameraShakeJump()
     {
-        impulseLand.GenerateImpulse(Camera.main.transform.forward);
+        impulseLand.GenerateImpulse();
     }
 
     public void generateDustParticleLeftFoot()
@@ -724,64 +836,133 @@ public class Player : MonoBehaviour
     public void generateSwordEffects()
     {
         audioSource.PlayOneShot(swordSlashes[Random.Range(0, swordSlashes.Length)]);
-        impulseFeet.GenerateImpulse(Camera.main.transform.forward);
+        impulseSlash.GenerateImpulse();
     }
 
     public void generateSwordDamage()
     {
-        if (sword.GetComponent<SwordHitbox>().inTarget && sword.GetComponent<SwordHitbox>().currentTarget != null && sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health > 0)
+        var viableTargets = new List<GameObject>();
+        var cols = Physics.OverlapBox(sword.transform.position, hitboxRadius);
+        var rigidbodies = new List<Rigidbody>();
+        foreach (var col in cols)
         {
-            if (!airJuggleAttacking)
+            if (col.attachedRigidbody != null && !rigidbodies.Contains(col.attachedRigidbody))
             {
-                audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
-                impulseSword.GenerateImpulse(Camera.main.transform.forward);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().Damage(damage);
-                if (sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health <= 0)
-                {
-                    embers += 15;
-                }
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+                rigidbodies.Add(col.attachedRigidbody);
             }
-            else if (!downwardsAttack)
-            {
-                //Not downwards air juggle attack
-                audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
-                impulseSword.GenerateImpulse(Camera.main.transform.forward);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().Damage(damage * 2);
-                if (sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health <= 0)
-                {
-                    embers += 5;
-                }
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.up * damageForce / 2);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Animator>().SetTrigger("Die");
-                airJuggleAttacking = false;
-                embers -= 10;
-            }
-            else
-            {
-                //Downwards air juggle attack
-                audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
-                impulseSword.GenerateImpulse(Camera.main.transform.forward);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().Damage(damage * 2);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().thrown = true;
-                if (sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<MonsterController>().health <= 0)
-                {
-                    embers += 5;
-                }
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce * 1.5f);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Rigidbody>().AddForce(Vector3.down * damageForce * 1.5f);
-                sword.GetComponent<SwordHitbox>().currentTarget.GetComponent<Animator>().SetTrigger("Die");
-                airJuggleAttacking = false;
-                downwardsAttack = false;
-                embers -= 10;
-            }
-
         }
+        foreach (var rb in rigidbodies)
+        {
+            if (rb.transform.root.gameObject.GetComponent<MonsterController>())
+            {
+                if (rb.GetComponent<MonsterController>().health > 0)
+                {
+                    viableTargets.Add(rb.gameObject);
+                    if (!airJuggleAttacking)
+                    {
+                        audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+                        impulseSword.GenerateImpulse();
+                        rb.GetComponent<MonsterController>().Damage(damage);
+                        if (rb.GetComponent<MonsterController>().health <= 0)
+                        {
+                            StartCoroutine(StartTimeDilation());
+                            embers += emberGainKill;
+                        }
+                        rb.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+                    }
+                    else if (!downwardsAttack)
+                    {
+                        //Not downwards air juggle attack
+                        audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+                        impulseSword.GenerateImpulse();
+                        rb.GetComponent<MonsterController>().Damage(damage * 2);
+                        if (rb.GetComponent<MonsterController>().health <= 0)
+                        {
+                            StartCoroutine(StartTimeDilation());
+                        }
+                        rb.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+                        rb.GetComponent<Rigidbody>().AddForce(transform.up * damageForce / 2);
+                        rb.GetComponent<Animator>().SetTrigger("Die");
+                        airJuggleAttacking = false;
+                        embers -= airAttackCost;
+                    }
+                    else
+                    {
+                        //Downwards air juggle attack
+                        audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+                        impulseSword.GenerateImpulse();
+                        rb.GetComponent<MonsterController>().Damage(damage * 2);
+                        rb.GetComponent<MonsterController>().thrown = true;
+                        if (rb.GetComponent<MonsterController>().health <= 0)
+                        {
+                            StartCoroutine(StartTimeDilation());
+                        }
+                        rb.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce * 1.5f);
+                        rb.GetComponent<Rigidbody>().AddForce(Vector3.down * damageForce * 1.5f);
+                        rb.GetComponent<Animator>().SetTrigger("Die");
+                        airJuggleAttacking = false;
+                        downwardsAttack = false;
+                        embers -= airAttackCost;
+                    }
+                }
+            }      
+        }
+        if (viableTargets.Count <= 0)
+        {
+            sword.GetComponent<SwordHitbox>().inTarget = false;
+        }
+    }
+
+    public void generateSlamSwordDamage()
+    {
+        var cols = Physics.OverlapBox(sword.transform.position, hitboxRadius * 3);
+        var rigidbodies = new List<Rigidbody>();
+        foreach (var col in cols)
+        {
+            if (col.attachedRigidbody != null && !rigidbodies.Contains(col.attachedRigidbody))
+            {
+                rigidbodies.Add(col.attachedRigidbody);
+            }
+        }
+        foreach (var rb in rigidbodies)
+        {
+            if (rb.transform.root.gameObject.GetComponent<MonsterController>())
+            {
+                if (rb.GetComponent<MonsterController>().health > 0)
+                {
+                    audioSource.PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+                    impulseSword.GenerateImpulse();
+                    rb.GetComponent<MonsterController>().Damage(groundSlamAttackDamage);
+                    if (rb.GetComponent<MonsterController>().health <= 0)
+                    {
+                        StartCoroutine(StartTimeDilation());
+                    }
+                    rb.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
+                }
+            }
+        }
+
+        if (GameObject.FindGameObjectWithTag("Boss")){
+            if (GameObject.FindGameObjectWithTag("Boss").GetComponent<TurtleBossController>().canTakeDamage)
+            {
+                GameObject.FindGameObjectWithTag("Boss").GetComponent<TurtleBossController>().Damage(20);
+                if (GameObject.FindGameObjectWithTag("Boss").GetComponent<TurtleBossController>().health <= 0)
+                {
+                    StartCoroutine(StartTimeDilation());
+                }
+            }
+        }
+
+
+
+        sword.GetComponent<AudioSource>().PlayOneShot(groundSlamSound);
+        Instantiate(groundSlamEffect, sword.transform.position, Quaternion.identity);
+        embers -= groundSlamAttackCost;
     }
 
     public void generateSlashEffect()
     {
+        //impulseFeet.GenerateImpulse();
         if (!sword.GetComponent<SwordHitbox>().inTarget)
         {
             GameObject slashObj = Instantiate(slashEffects[Random.Range(0, slashEffects.Length)], sword.transform.position, sword.transform.rotation);
@@ -792,6 +973,18 @@ public class Player : MonoBehaviour
             GameObject slashObj = Instantiate(slashEffectHits[Random.Range(0, slashEffectHits.Length)], sword.transform.position, sword.transform.rotation);
             slashObj.transform.Rotate(-90, 0, 0);
         }
+    }
+
+    public void generateSlashEffectFire()
+    {
+        impulseLand.GenerateImpulse();
+        GameObject slashObj = Instantiate(fireSlash, sword.transform.position, sword.transform.rotation);
+        slashObj.transform.Rotate(-90, 0, 0);
+    }
+
+    public void generateSlashEffectFireNoise()
+    {
+        sword.GetComponent<AudioSource>().PlayOneShot(emberActivate2);
     }
 
     /*
@@ -832,7 +1025,16 @@ public class Player : MonoBehaviour
     {
         StopCoroutine("Regen");
         CancelInvoke("StartRegen");
+        anim.SetTrigger("GetHit");
+
+        GameObject dmgPopup = Instantiate(damagePopup, textSpawn.position, Quaternion.identity);
+        dmgPopup.GetComponentInChildren<TextMeshPro>().text = damage.ToString();
+        sword.GetComponent<AudioSource>().PlayOneShot(swordhits[2]);
+
         health -= damage;
+
+        impulseLand.GenerateImpulse();
+        GetComponent<AudioSource>().PlayOneShot(damagedSounds[Random.Range(0, damagedSounds.Length)]);
         if (health <= 0)
         {
             UIController.instance.health.value = 0;
@@ -895,9 +1097,28 @@ public class Player : MonoBehaviour
     {
         if (other.tag == "Lantern" && this.gameObject.name == "Player")
         {
-            health += other.gameObject.GetComponent<SineMovement>().healthToRestore;
-            GetComponent<AudioSource>().PlayOneShot(other.gameObject.GetComponent<SineMovement>().lanternPickup);
+            health += other.gameObject.GetComponent<Lantern>().healthToRestore;
+            GetComponent<AudioSource>().PlayOneShot(other.gameObject.GetComponent<Lantern>().lanternPickup);
+            Instantiate(other.gameObject.GetComponent<Lantern>().pickupEffect, other.transform.position, other.transform.rotation);
+            other.gameObject.GetComponent<CinemachineImpulseSource>().GenerateImpulse();
             Destroy(other.gameObject);
+        }
+    }
+
+    private IEnumerator StartTimeDilation()
+    {
+        Time.timeScale = .35f;
+        yield return new WaitForSeconds(.2f);
+        Time.timeScale = 1;
+    }
+
+    public IEnumerator EmberDissapation()
+    {
+        while (embers > 0)
+        {
+            embers -= numEmbersToRemovePerCycle;
+
+            yield return new WaitForSeconds(timeBetweenEmberDissapation);
         }
     }
 }

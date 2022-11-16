@@ -1,6 +1,4 @@
-﻿//Nathan Davis and Will Souers
-
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,13 +7,21 @@ using UnityEngine.AI;
 using Cinemachine;
 
 [System.Serializable]
-public class serializableClass
+public class knightColors
 {
-    public List<Color> nestedColors;
+    public List<Color> nestedColors = new List<Color>();
+}
+
+[System.Serializable]
+public class snakeColors
+{
+    public List<Color> nestedColors = new List<Color>();
 }
 
 public class MonsterController : MonoBehaviour
 {
+    public enum enemy { knight, snake };
+    public enemy enemyType;
     public Animator anim;
     public Transform[] points;
     int index = 0;
@@ -53,8 +59,9 @@ public class MonsterController : MonoBehaviour
     public Color hitColor;
     public float dissolveValue = 1;
     private float origDissolve;
-    //public List<List<Color>> origColors;
-    public List<serializableClass> origColors = new List<serializableClass>();
+    //public List<List<Color>> origColorsKnight;
+    public List<knightColors> origColorsKnight = new List<knightColors>();
+    public List<snakeColors> origColorsSnake = new List<snakeColors>();
     public GameObject particles;
     bool waiting;
 
@@ -82,17 +89,88 @@ public class MonsterController : MonoBehaviour
     bool disable;
 
     public bool useDissolve;
+    public bool useRandomAttacks;
+    public int numerOfAttackAnims;
 
 
     void Start()
     {
+        
+        for (int i = 0; i < rendererObjs.Length; i++)
+        {
+            if (enemyType == enemy.knight)
+            {
+                var c = new knightColors();
+                origColorsKnight.Add(c);
+            }
+            if (enemyType == enemy.snake)
+            {
+                var c = new snakeColors();
+                origColorsSnake.Add(c);
+            }
+        }
+        
+
         if (useDissolve)
         {
-            for (int i = 0; i < rendererObjs.Length; i++)
+            if (enemyType == enemy.knight)
             {
-                foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                for (int i = 0; i < rendererObjs.Length; i++)
                 {
-                    origColors[i].nestedColors.Add(m.GetColor("_Color"));
+                    foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                    {
+                        origColorsKnight[i].nestedColors.Add(m.GetColor("_Color"));
+                    }
+                }
+            }
+            else if (enemyType == enemy.snake)
+            {
+
+            }
+
+        }
+        else
+        {
+            if (enemyType == enemy.knight)
+            {
+                for (int i = 0; i < rendererObjs.Length; i++)
+                {
+                    if (rendererObjs[i].GetComponent<SkinnedMeshRenderer>())
+                    {
+                        foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                        {
+                            origColorsKnight[i].nestedColors.Add(m.color);
+                        }
+                    }
+                    else if (rendererObjs[i].GetComponent<MeshRenderer>())
+                    {
+                        foreach (Material m in rendererObjs[i].GetComponent<MeshRenderer>().materials)
+                        {
+                            origColorsKnight[i].nestedColors.Add(m.color);
+                        }
+                    }
+
+                }
+            }
+            else if (enemyType == enemy.snake)
+            {
+                for (int i = 0; i < rendererObjs.Length; i++)
+                {
+                    if (rendererObjs[i].GetComponent<SkinnedMeshRenderer>())
+                    {
+                        foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                        {
+                            origColorsSnake[i].nestedColors.Add(m.color);
+                        }
+                    }
+                    else if (rendererObjs[i].GetComponent<MeshRenderer>())
+                    {
+                        foreach (Material m in rendererObjs[i].GetComponent<MeshRenderer>().materials)
+                        {
+                            origColorsSnake[i].nestedColors.Add(m.color);
+                        }
+                    }
+
                 }
             }
         }
@@ -168,7 +246,11 @@ public class MonsterController : MonoBehaviour
 
                 attacking = true;
                 warnings.SetActive(true);
-                anim.SetTrigger("attack");
+
+                if (useRandomAttacks)
+                    anim.SetTrigger("Attack" + Random.Range(1, numerOfAttackAnims+1));
+                else
+                    anim.SetTrigger("Attack1");
                 canAttack = false;
                 Invoke("dealDamage", swingDelay);
                 Invoke("resetAttack", attackDelay);
@@ -219,7 +301,7 @@ public class MonsterController : MonoBehaviour
         {
             if (target)
             {
-                if (attacking && Mathf.Abs(transform.position.x - target.transform.position.x) <= 5)
+                if (attacking && Mathf.Abs(transform.position.x - target.transform.position.x) <= 1)
                 {
                     target.GetComponent<Player>().Damage(damage);
                     attacking = false;
@@ -357,12 +439,46 @@ public class MonsterController : MonoBehaviour
 
             if (useDissolve)
             {
+                if (enemyType == enemy.knight)
+                {
+                    for (int i = 0; i < rendererObjs.Length; i++)
+                    {
+                        foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                        {
+                            m.SetColor("_Color", hitColor);
+                        }
+                    }
+                }
+                else if (enemyType == enemy.snake)
+                {
+                    for (int i = 0; i < rendererObjs.Length; i++)
+                    {
+                        foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                        {
+                            m.SetColor("_Color", hitColor);
+                        }
+                    }
+                }
+            }
+            else
+            {
                 for (int i = 0; i < rendererObjs.Length; i++)
                 {
-                    foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                    if (rendererObjs[i].GetComponent<SkinnedMeshRenderer>())
                     {
-                        m.SetColor("_Color", hitColor);
+                        foreach (Material m in rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials)
+                        {
+                            m.color = hitColor;
+                        }
                     }
+                    else if (rendererObjs[i].GetComponent<MeshRenderer>())
+                    {
+                        foreach (Material m in rendererObjs[i].GetComponent<MeshRenderer>().materials)
+                        {
+                            m.color = hitColor;
+                        }
+                    }
+
                 }
             }
 
@@ -388,11 +504,68 @@ public class MonsterController : MonoBehaviour
     {
         if (useDissolve)
         {
-            for (int i = 0; i < rendererObjs.Length; i++)
+            if (enemyType == enemy.knight)
             {
-                for (int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+                for (int i = 0; i < rendererObjs.Length; i++)
                 {
-                    rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].SetColor("_Color", origColors[i].nestedColors[j]);
+                    for (int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+                    {
+                        rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].SetColor("_Color", origColorsKnight[i].nestedColors[j]);
+                    }
+                }
+            }
+            else if (enemyType == enemy.snake)
+            {
+                for (int i = 0; i < rendererObjs.Length; i++)
+                {
+                    for (int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+                    {
+                        rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].SetColor("_Color", origColorsSnake[i].nestedColors[j]);
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (enemyType == enemy.knight)
+            {
+                for (int i = 0; i < rendererObjs.Length; i++)
+                {
+                    if (rendererObjs[i].GetComponent<SkinnedMeshRenderer>())
+                    {
+                        for (int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+                        {
+                            rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].color = origColorsKnight[i].nestedColors[j];
+                        }
+                    }
+                    else if (rendererObjs[i].GetComponent<MeshRenderer>())
+                    {
+                        for (int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+                        {
+                            rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].color = origColorsKnight[i].nestedColors[j];
+                        }
+                    }
+                }
+            }
+            else if (enemyType == enemy.snake)
+            {
+
+                for (int i = 0; i < rendererObjs.Length; i++)
+                {
+                    if (rendererObjs[i].GetComponent<SkinnedMeshRenderer>())
+                    {
+                        for (int j = 0; j < rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials.Length; j++)
+                        {
+                            rendererObjs[i].GetComponent<SkinnedMeshRenderer>().materials[j].color = origColorsSnake[i].nestedColors[j];
+                        }
+                    }
+                    else if (rendererObjs[i].GetComponent<MeshRenderer>())
+                    {
+                        for (int j = 0; j < rendererObjs[i].GetComponent<MeshRenderer>().materials.Length; j++)
+                        {
+                            rendererObjs[i].GetComponent<MeshRenderer>().materials[j].color = origColorsSnake[i].nestedColors[j];
+                        }
+                    }
                 }
             }
         }
@@ -404,6 +577,7 @@ public class MonsterController : MonoBehaviour
         warnings.SetActive(false);
         dying = true;
         anim.SetTrigger("Die");
+        anim.SetBool("Dead", true);
         Invoke("Deactivate", .8f);
         if (useLives)
         {
@@ -433,6 +607,11 @@ public class MonsterController : MonoBehaviour
         if (waveID == 3)
         {
             WaveController.instance.enemyCountWave3--;
+        }
+
+        if (waveID == 4)
+        {
+            WaveController.instance.enemyCountWave4--;
         }
 
         Destroy(gameObject, 5);
@@ -466,7 +645,6 @@ public class MonsterController : MonoBehaviour
         {
             Invoke("Respawn", respawnTime);
         }
-        GetComponent<Rigidbody>().isKinematic = true;
         GetComponent<CapsuleCollider>().enabled = false;
     }
 

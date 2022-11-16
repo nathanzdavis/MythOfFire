@@ -17,6 +17,11 @@ public class CannonShooter : MonoBehaviour
     public GameObject target;
 
     public float shootOffset;
+
+    public GameObject explosion;
+    public Transform explosionSpawn;
+    public AudioClip fireNoise;
+
     void Update()
     {
         timer += Time.deltaTime;
@@ -46,6 +51,9 @@ public class CannonShooter : MonoBehaviour
         Rigidbody rb = go.GetComponent<Rigidbody>();
         rb.velocity = go.transform.forward * shootForce;
         rb.useGravity = true;
+
+        GetComponent<AudioSource>().PlayOneShot(fireNoise);
+        Instantiate(explosion, explosionSpawn.position, Quaternion.identity);
 
         timer = 0f;
     }

@@ -48,6 +48,10 @@ public class OptionsController : MonoBehaviour
                 }
             }
             toggle = !toggle;
+            if (Time.timeScale == 0)
+                Time.timeScale = 1;
+            else
+                Time.timeScale = 0;
         };
     }
 
@@ -67,6 +71,11 @@ public class OptionsController : MonoBehaviour
         toggle = !toggle;
         if (GameObject.FindGameObjectWithTag("Player").GetComponent<Player>().health > 0)
             GameObject.FindGameObjectWithTag("Player").GetComponent<Player>().input.Player.Enable();
+
+        if (Time.timeScale == 0)
+            Time.timeScale = 1;
+        else
+            Time.timeScale = 0;
     }
 
     public void UnLockCursor()

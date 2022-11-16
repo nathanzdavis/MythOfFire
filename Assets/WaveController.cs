@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cinemachine;
 
 public class WaveController : MonoBehaviour
 {
@@ -8,17 +9,18 @@ public class WaveController : MonoBehaviour
     public int enemyCountWave1;
     public int enemyCountWave2;
     public int enemyCountWave3;
+    public int enemyCountWave4;
 
     private int origEnemyCountWave1;
     private int origEnemyCountWave2;
     private int origEnemyCountWave3;
-
+    private int origEnemyCountWave4;
     public float timeBetweenWaves1;
 
     public float timeBetweenEnemies1;
     public float timeBetweenEnemies2;
     public float timeBetweenEnemies3;
-
+    public float timeBetweenEnemies4;
     public Transform[] spawns;
 
     public GameObject[] wave1EnemyTypes;
@@ -33,6 +35,26 @@ public class WaveController : MonoBehaviour
 
     private int currentEnemyCounter = 0;
 
+
+    public float bossFOV;
+    public CinemachineVirtualCamera mainCam;
+
+    public MiniBossController turtleMiniBoss;
+    public float timeBeforeBossFight;
+    public TurtleBossController Boss;
+    public float valueToZoomBy;
+    public float valueToRotateBy;
+    public float targetCameraXRotation = -2f;
+    private float negX;
+
+    public AudioClip bossMusic;
+    public AudioSource bossMusicsource;
+
+    public float ttp1time;
+    public float ttp2time;
+    public float ttp3time;
+    public float ttp4time;
+
     void Start()
     {
         instance = this;
@@ -43,7 +65,56 @@ public class WaveController : MonoBehaviour
         origEnemyCountWave1 = enemyCountWave1;
         origEnemyCountWave2 = enemyCountWave2;
         origEnemyCountWave3 = enemyCountWave3;
+        origEnemyCountWave4 = enemyCountWave4;
         Invoke("WaveUI", timeBetweenWaves1 / 2);
+        Invoke("ttp1", ttp1time);
+        Invoke("ttp2", ttp2time);
+        Invoke("ttp3", ttp3time);
+        Invoke("ttp4", ttp4time);
+    }
+
+    private void ttp1()
+    {
+        UIController.instance.tooltip1.SetActive(true);
+        Invoke("hidettp1", 15);
+    }
+
+    private void hidettp1()
+    {
+        UIController.instance.tooltip1.SetActive(false);
+    }
+
+    private void ttp2()
+    {
+        UIController.instance.tooltip2.SetActive(true);
+        Invoke("hidettp2", 15);
+    }
+
+    private void hidettp2()
+    {
+        UIController.instance.tooltip2.SetActive(false);
+    }
+
+    private void ttp3()
+    {
+        UIController.instance.tooltip3.SetActive(true);
+        Invoke("hidettp3", 15);
+    }
+
+    private void hidettp3()
+    {
+        UIController.instance.tooltip3.SetActive(false);
+    }
+
+    private void ttp4()
+    {
+        UIController.instance.tooltip4.SetActive(true);
+        Invoke("hidettp4", 15);
+    }
+
+    private void hidettp4()
+    {
+        UIController.instance.tooltip4.SetActive(false);
     }
 
     private void WaveUI()
@@ -64,6 +135,11 @@ public class WaveController : MonoBehaviour
     private void HandleWave3()
     {
         StartCoroutine("Wave3Spawns");
+    }
+
+    private void HandleWave4()
+    {
+        StartCoroutine("Wave4Spawns");
     }
 
     private IEnumerator Wave1Spawns()
@@ -105,6 +181,20 @@ public class WaveController : MonoBehaviour
             enemySpawn.transform.Rotate(0, -90, 0);
             currentEnemyCounter++;
             yield return new WaitForSeconds(timeBetweenEnemies3);
+        }
+    }
+
+    private IEnumerator Wave4Spawns()
+    {
+        print("Spawninig wave 4 enemies");
+        while (currentEnemyCounter < origEnemyCountWave4)
+        {
+            GameObject enemySpawn = Instantiate(wave3EnemyTypes[Random.Range(0, wave3EnemyTypes.Length)], spawns[Random.Range(0, spawns.Length)].position, Quaternion.identity);
+            enemySpawn.GetComponent<MonsterController>().target = GameObject.FindGameObjectWithTag("Player");
+            enemySpawn.GetComponent<MonsterController>().waveID = 4;
+            enemySpawn.transform.Rotate(0, -90, 0);
+            currentEnemyCounter++;
+            yield return new WaitForSeconds(timeBetweenEnemies4);
         }
     }
 
@@ -158,9 +248,72 @@ public class WaveController : MonoBehaviour
             StopCoroutine("Wave3Spawns");
             print("Wave 3 done");
             UIController.instance.wave.value = 0;
+            //UIController.instance.gameOverScreen.SetActive(true);
+            //OptionsController.instance.UnLockCursor();
+
+            Invoke("BossFight", timeBeforeBossFight);
+
+            turtleMiniBoss.HideTurtle();
+            turtleMiniBoss.deactive = true;
+
             wave3complete = true;
-            UIController.instance.gameOverScreen.SetActive(true);
-            OptionsController.instance.UnLockCursor();
+        }
+
+        negX = mainCam.transform.localEulerAngles.x;
+        negX = (negX > 180) ? negX - 360 : negX;
+    }
+
+    private void BossFight()
+    {
+        bossMusicsource.clip = bossMusic;
+        bossMusicsource.Play();
+        UIController.instance.bossBar.SetActive(true);
+        Boss.gameObject.SetActive(true);
+        Boss.AriseTurtle();
+        StartCoroutine(zoomOut());
+        StartCoroutine(rotateCamera());
+        //mainCam.m_Lens.FieldOfView = bossFOV;
+
+        Invoke("HandleWave4", timeBetweenWaves1);
+        currentEnemyCounter = 0;
+    }
+
+    private IEnumerator zoomOut()
+    {
+        while (mainCam.m_Lens.FieldOfView != bossFOV)
+        {
+            if (mainCam.m_Lens.FieldOfView > bossFOV)
+                mainCam.m_Lens.FieldOfView -= valueToZoomBy;
+            else
+                mainCam.m_Lens.FieldOfView += valueToZoomBy;
+
+            yield return new WaitForSeconds(.01f);
+        }
+    }
+
+    private IEnumerator rotateCamera()
+    {
+
+        while (negX > targetCameraXRotation)
+        {
+
+            print(negX);
+            if (mainCam.transform.localEulerAngles.x > targetCameraXRotation)
+                mainCam.transform.localEulerAngles = new Vector3(mainCam.transform.localEulerAngles.x - valueToRotateBy, mainCam.transform.localEulerAngles.y, mainCam.transform.localEulerAngles.z);
+            else
+                mainCam.transform.localEulerAngles = new Vector3(mainCam.transform.localEulerAngles.x + valueToRotateBy, mainCam.transform.localEulerAngles.y, mainCam.transform.localEulerAngles.z);
+
+            yield return new WaitForSeconds(.01f);
+        }
+    }
+
+    private IEnumerator zoomIn()
+    {
+        while (mainCam.m_Lens.FieldOfView > 28)
+        {
+            mainCam.m_Lens.FieldOfView -= valueToZoomBy;
+
+            yield return new WaitForSeconds(.01f);
         }
     }
 }

@@ -29,6 +29,6 @@ public class LanternSpawner : MonoBehaviour
     private void LanternSpawn()
     {
         activeLantern = Instantiate(lantern, lanternSpawnpoint.position, lanternSpawnpoint.rotation);
-        activeLantern.GetComponent<SineMovement>().target = target;
+        activeLantern.GetComponent<Lantern>().target = target;
     }
 }

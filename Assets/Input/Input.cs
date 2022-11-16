@@ -152,6 +152,15 @@ public partial class @Input : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Special"",
+                    ""type"": ""Button"",
+                    ""id"": ""a8628573-2025-4575-8ecd-bc19fdd85ef9"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -570,6 +579,28 @@ public partial class @Input : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""SlowMo"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""15abb9ce-d219-4d28-9f1a-229679630c23"",
+                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Special"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""be2e5752-9e5e-4bf1-b7c9-a98d4b70b97c"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Special"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1202,6 +1233,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         m_Player_RollRight = m_Player.FindAction("RollRight", throwIfNotFound: true);
         m_Player_SwitchStyle = m_Player.FindAction("SwitchStyle", throwIfNotFound: true);
         m_Player_SlowMo = m_Player.FindAction("SlowMo", throwIfNotFound: true);
+        m_Player_Special = m_Player.FindAction("Special", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1288,6 +1320,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_RollRight;
     private readonly InputAction m_Player_SwitchStyle;
     private readonly InputAction m_Player_SlowMo;
+    private readonly InputAction m_Player_Special;
     public struct PlayerActions
     {
         private @Input m_Wrapper;
@@ -1306,6 +1339,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         public InputAction @RollRight => m_Wrapper.m_Player_RollRight;
         public InputAction @SwitchStyle => m_Wrapper.m_Player_SwitchStyle;
         public InputAction @SlowMo => m_Wrapper.m_Player_SlowMo;
+        public InputAction @Special => m_Wrapper.m_Player_Special;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1357,6 +1391,9 @@ public partial class @Input : IInputActionCollection2, IDisposable
                 @SlowMo.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSlowMo;
                 @SlowMo.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSlowMo;
                 @SlowMo.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSlowMo;
+                @Special.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSpecial;
+                @Special.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSpecial;
+                @Special.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSpecial;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -1403,6 +1440,9 @@ public partial class @Input : IInputActionCollection2, IDisposable
                 @SlowMo.started += instance.OnSlowMo;
                 @SlowMo.performed += instance.OnSlowMo;
                 @SlowMo.canceled += instance.OnSlowMo;
+                @Special.started += instance.OnSpecial;
+                @Special.performed += instance.OnSpecial;
+                @Special.canceled += instance.OnSpecial;
             }
         }
     }
@@ -1581,6 +1621,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         void OnRollRight(InputAction.CallbackContext context);
         void OnSwitchStyle(InputAction.CallbackContext context);
         void OnSlowMo(InputAction.CallbackContext context);
+        void OnSpecial(InputAction.CallbackContext context);
     }
     public interface IUIActions
     {

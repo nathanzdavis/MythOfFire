@@ -8,6 +8,11 @@ TagManager:
   - Enemy
   - Sword
   - EnemyHitbox
+  - PlayerHitRange
+  - PlayerRange
+  - Fire
+  - CannonBall
+  - Lantern
   layers:
   - Default
   - TransparentFX
@@ -21,7 +26,7 @@ TagManager:
   - Not in Reflection
   - Sword
   - Enemy
-  - 
+  - Boat
   - 
   - 
   - 
@@ -44,4 +49,7 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Camera_Effect
+    uniqueID: 2917592517
     locked: 0
