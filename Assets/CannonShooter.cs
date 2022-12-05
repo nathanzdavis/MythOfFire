@@ -22,6 +22,8 @@ public class CannonShooter : MonoBehaviour
     public Transform explosionSpawn;
     public AudioClip fireNoise;
 
+    public GameObject indicatorWarning;
+
     void Update()
     {
         timer += Time.deltaTime;
@@ -44,6 +46,13 @@ public class CannonShooter : MonoBehaviour
         float projectileTimeToTarget = distanceToTarget / projectileSpeed;
         float projectedTargetTravelDistance = targetSpeed * projectileTimeToTarget;
         Vector3 projectedTarget = target.transform.position + targetDirection * projectedTargetTravelDistance;
+
+        if (GameObject.FindGameObjectWithTag("Player").GetComponent<Player>().isGrounded)
+        {
+            GameObject indicator = Instantiate(indicatorWarning, projectedTarget, Quaternion.identity);
+        }
+
+
         projectedTarget.y += shootOffset; //aim at center of target if 2m high
 
         GameObject go = Instantiate(projectile, transform.position, Quaternion.identity);

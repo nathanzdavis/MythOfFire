@@ -50,6 +50,7 @@ public class Player : MonoBehaviour
     public float gravity = -9.81f;
     private float originalGravity;
     public float hitAngleDown;
+    private int jumpCounter;
 
     [Header("Wall Check")]
     [SerializeField] private LayerMask obstacleLayers;
@@ -98,6 +99,7 @@ public class Player : MonoBehaviour
     public int chargeAttackCost;
     public int emberGainKill;
     public int emberGainParry;
+    private bool held;
 
     [Header("Slide")]
     public AudioClip slideSound;
@@ -117,6 +119,7 @@ public class Player : MonoBehaviour
     public Cinemachine.CinemachineImpulseSource impulseSword;
     public AudioClip[] swordSlashes;
     public AudioClip[] swordhits;
+    public AudioClip[] groundToAirSound;
     public AudioClip[] swordParrys;
     public GameObject[] slashEffects;
     public GameObject[] slashEffectHits;
@@ -176,10 +179,18 @@ public class Player : MonoBehaviour
         //Attack input pressed
         input.Player.Attack.performed += ctx =>
         {
-            if (isGrounded)
-                HandleAttack();
-            else if (!isGrounded)
-                HandleAirAttack();
+            if (!held)
+            {
+                if (isGrounded)
+                    HandleAttack();
+                else if (!isGrounded)
+                    HandleAirAttack();
+            }
+            else if (held && style2)
+            {
+                HandleChargeRelease();
+            }
+
         };
 
         //Special Attack input pressed
@@ -225,6 +236,25 @@ public class Player : MonoBehaviour
             HandleSlowMo();
         };
     }
+
+    private void OnCharge(InputValue ia)
+    {
+        float val = ia.Get<float>();
+
+        if (val >= .1f)
+        {
+            print("held");
+            HandleChargeStart();
+        }
+        else
+        {
+            if (val <= .1f)
+            {
+                anim.SetBool("Charge", false);
+            }
+        }
+    }
+
     private void Start()
     {
         //Initialize these on start
@@ -276,16 +306,16 @@ public class Player : MonoBehaviour
 
             }
 
-            if (health <= 25 && !fillingScreen)
+            if (health <= 25)
             {
                 UIController.instance.StartCoroutine("fillScreen");
-                fillingScreen = true;
+                UIController.instance.StopCoroutine("defillScreen");
             }
 
-            if (health > 25 && fillingScreen)
+            if (health > 25)
             {
                 UIController.instance.StartCoroutine("defillScreen");
-                fillingScreen = false;
+                UIController.instance.StopCoroutine("fillScreen");
             }
 
             if (embers <= 0 && style2)
@@ -322,6 +352,8 @@ public class Player : MonoBehaviour
             GetComponent<Rigidbody>().AddForce(Vector3.down * gravity);
         }
 
+
+        //Make sure we dont zip around from any glitches
         GetComponent<Rigidbody>().velocity = Vector3.ClampMagnitude(GetComponent<Rigidbody>().velocity, maxVelocity);
     }
 
@@ -362,10 +394,15 @@ public class Player : MonoBehaviour
 
         if (_move.x == 0)
         {
-            GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
+            //GetComponent<Rigidbody>().velocity = new Vector3(0, GetComponent<Rigidbody>().velocity.y, 0);
             anim.SetBool("Run", false);
             anim.SetFloat("Speed", 1);
             speedToggle = false;
+        }
+
+        if (_move.x == 0 || !isGrounded)
+        {
+            GetComponentInChildren<OffsetRotation>().offsetRotation = 0;
         }
 
         if (m_hitWall)
@@ -453,6 +490,7 @@ public class Player : MonoBehaviour
             {
                 generateCameraShakeLand();
                 audioSource.PlayOneShot(footsteps[Random.Range(0, footsteps.Length)]);
+                jumpCounter = 0;
             }
 
             isGrounded = true;
@@ -483,29 +521,7 @@ public class Player : MonoBehaviour
     //Add jump force
     private void HandleJump()
     {
-        if (embers >= 10 && style2 && isGrounded && insideEnemyHitbox && currentEnemyOnUs && currentEnemyOnUs.GetComponent<MonsterController>().health > 0)
-        {
-            //Normal jump stuff
-            anim.applyRootMotion = false;
-            anim.SetTrigger("Jump");
-            generateCameraShakeJump();
-            jumped = true;
-            groundCheckDistance = .001f;
-            Invoke(nameof(ResetGroundCheck), .1f);
-            audioSource.PlayOneShot(jumpSound);
-            GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight / 1.5f);
-
-            //Air juggling/attack
-            gravity = 0;
-            currentEnemyOnUs.GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight / 1.5f);
-            airControlForce = 0;
-            airJuggleAttacking = true;
-
-            Invoke("ResetAllAirAttackStuff", 2f);
-            return;
-        }
-
-        if (isGrounded)
+        if (isGrounded && jumpCounter < 2)
         {
             //Normal jump
             anim.applyRootMotion = false;
@@ -516,9 +532,22 @@ public class Player : MonoBehaviour
             Invoke(nameof(ResetGroundCheck), .1f);
             audioSource.PlayOneShot(jumpSound);
             GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight);
-
-            //UIController.instance.healthText.text = "50";
+            jumpCounter++;
         }
+        else if (!isGrounded && jumpCounter == 1)
+        {
+            //Normal jump
+            anim.applyRootMotion = false;
+            anim.SetTrigger("DoubleJump");
+            generateCameraShakeJump();
+            jumped = true;
+            groundCheckDistance = .001f;
+            Invoke(nameof(ResetGroundCheck), .1f);
+            audioSource.PlayOneShot(jumpSound);
+            GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight);
+            jumpCounter++;
+        }
+
     }
 
     private void ResetAllAirAttackStuff()
@@ -566,16 +595,29 @@ public class Player : MonoBehaviour
                         dashObj.transform.localPosition = new Vector3(0, 1, 0);
                     }
                     */
-                    GetComponent<Rigidbody>().AddForce(transform.forward * dashAmount, ForceMode.Acceleration);
+                    GetComponent<Rigidbody>().AddForce(transform.forward * dashAmount, ForceMode.VelocityChange);
+                    GetComponent<Rigidbody>().AddForce(-transform.up * 50, ForceMode.VelocityChange);
                     GameObject dashObj = Instantiate(dashEffect, transform.position, transform.rotation, transform);
                     dashObj.transform.localEulerAngles = new Vector3(0, -180, 0);
                     dashObj.transform.localPosition = new Vector3(0, 1, 0);
                 }
+                
+                if (_move.y > .3f && style2)
+                {
+                    if (embers >= 10  && isGrounded && insideEnemyHitbox && currentEnemyOnUs && currentEnemyOnUs.GetComponent<MonsterController>().health > 0)
+                    {
+                        //Air attack stuff
+                        anim.SetTrigger("AirAttackJump");
+                    }
+                }
+                else
+                {
+                    if (style1)
+                        anim.SetTrigger("Attack" + Random.Range(1, 3));
+                    else if (style2)
+                        anim.SetTrigger("Attack" + Random.Range(1, 6));
+                }
 
-                if (style1)
-                    anim.SetTrigger("Attack" + Random.Range(1, 3));
-                else if (style2)
-                    anim.SetTrigger("Attack" + Random.Range(1, 6));
             }
             else if (canSlideAttack)
                 anim.SetTrigger("AttackSlide");
@@ -628,6 +670,26 @@ public class Player : MonoBehaviour
                 Invoke(nameof(AttackReset), cooldownBetweenAttacks);
             }
         }
+    }
+
+    private void HandleChargeStart()
+    {
+        anim.SetBool("Charge", true);
+        held = true;
+    }
+
+    private void HandleChargeRelease()
+    {
+        GetComponent<Rigidbody>().AddForce(transform.forward * dashAmount * 5, ForceMode.VelocityChange);
+        GetComponent<Rigidbody>().AddForce(-transform.up * 50, ForceMode.VelocityChange);
+        anim.SetTrigger("ChargeAttack");
+        Invoke("ResetCharge", .5f);
+        held = false;
+    }
+
+    private void ResetCharge()
+    {
+        anim.SetBool("Charge", false);
     }
 
     //Guard
@@ -775,7 +837,7 @@ public class Player : MonoBehaviour
             UIController.instance.emberFire.SetActive(false);
             GetComponent<AudioSource>().PlayOneShot(fireRanOut);
         }
-        styleToggle = !styleToggle;
+        //styleToggle = !styleToggle;
     }
 
     private void StopPowerUpParticles()
@@ -865,7 +927,7 @@ public class Player : MonoBehaviour
                         rb.GetComponent<MonsterController>().Damage(damage);
                         if (rb.GetComponent<MonsterController>().health <= 0)
                         {
-                            StartCoroutine(StartTimeDilation());
+                            StartCoroutine(StartTimeDilation(.2f, .35f));
                             embers += emberGainKill;
                         }
                         rb.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
@@ -878,7 +940,7 @@ public class Player : MonoBehaviour
                         rb.GetComponent<MonsterController>().Damage(damage * 2);
                         if (rb.GetComponent<MonsterController>().health <= 0)
                         {
-                            StartCoroutine(StartTimeDilation());
+                            StartCoroutine(StartTimeDilation(.2f, .35f));
                         }
                         rb.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
                         rb.GetComponent<Rigidbody>().AddForce(transform.up * damageForce / 2);
@@ -895,7 +957,7 @@ public class Player : MonoBehaviour
                         rb.GetComponent<MonsterController>().thrown = true;
                         if (rb.GetComponent<MonsterController>().health <= 0)
                         {
-                            StartCoroutine(StartTimeDilation());
+                            StartCoroutine(StartTimeDilation(.2f, .35f));
                         }
                         rb.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce * 1.5f);
                         rb.GetComponent<Rigidbody>().AddForce(Vector3.down * damageForce * 1.5f);
@@ -935,7 +997,7 @@ public class Player : MonoBehaviour
                     rb.GetComponent<MonsterController>().Damage(groundSlamAttackDamage);
                     if (rb.GetComponent<MonsterController>().health <= 0)
                     {
-                        StartCoroutine(StartTimeDilation());
+                        StartCoroutine(StartTimeDilation(.2f, .35f));
                     }
                     rb.GetComponent<Rigidbody>().AddForce(transform.forward * damageForce);
                 }
@@ -948,7 +1010,7 @@ public class Player : MonoBehaviour
                 GameObject.FindGameObjectWithTag("Boss").GetComponent<TurtleBossController>().Damage(20);
                 if (GameObject.FindGameObjectWithTag("Boss").GetComponent<TurtleBossController>().health <= 0)
                 {
-                    StartCoroutine(StartTimeDilation());
+                    StartCoroutine(StartTimeDilation(.2f, .35f));
                 }
             }
         }
@@ -982,9 +1044,42 @@ public class Player : MonoBehaviour
         slashObj.transform.Rotate(-90, 0, 0);
     }
 
+    public void GenerateGroundToAirEffects()
+    {
+        StartCoroutine(StartTimeDilation(2f, .75f));
+        impulseLand.GenerateImpulse();
+        GameObject slashObj = Instantiate(fireSlash, sword.transform.position, sword.transform.rotation);
+        slashObj.transform.Rotate(-90, 0, 0);
+        GetComponent<AudioSource>().PlayOneShot(swordhits[Random.Range(0, swordhits.Length)]);
+
+
+        //Normal jump first 
+        anim.applyRootMotion = false;
+        generateCameraShakeJump();
+        jumped = true;
+        groundCheckDistance = .001f;
+        Invoke(nameof(ResetGroundCheck), .1f);
+        audioSource.PlayOneShot(jumpSound);
+        GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight / 1.5f);
+
+        //Air juggling/attack
+        gravity = 0;
+        currentEnemyOnUs.GetComponent<Rigidbody>().AddForce(Vector3.up * jumpHeight / 1.5f);
+        airControlForce = 0;
+        airJuggleAttacking = true;
+
+        Invoke("ResetAllAirAttackStuff", 2f);
+        return;
+    }
+
     public void generateSlashEffectFireNoise()
     {
         sword.GetComponent<AudioSource>().PlayOneShot(emberActivate2);
+    }
+
+    public void ChangeSpineForRun()
+    {
+        GetComponentInChildren<OffsetRotation>().offsetRotation = -25;
     }
 
     /*
@@ -1105,10 +1200,10 @@ public class Player : MonoBehaviour
         }
     }
 
-    private IEnumerator StartTimeDilation()
+    private IEnumerator StartTimeDilation(float delay, float amount)
     {
-        Time.timeScale = .35f;
-        yield return new WaitForSeconds(.2f);
+        Time.timeScale = amount;
+        yield return new WaitForSeconds(delay);
         Time.timeScale = 1;
     }
 

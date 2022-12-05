@@ -53,6 +53,15 @@ public class OptionsController : MonoBehaviour
             else
                 Time.timeScale = 0;
         };
+
+        input.UI.Submit.performed += ctx =>
+        {
+            if (WaveController.instance.ttpActive)
+            {
+                WaveController.instance.ttpActive = false;
+                Time.timeScale = 1;
+            }
+        };
     }
 
     private void Start()

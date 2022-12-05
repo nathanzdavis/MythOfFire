@@ -56,5 +56,7 @@ public class CannonBall : MonoBehaviour
                 Destroy(gameObject, 2f);
             }
         }
+
+        Destroy(GameObject.FindGameObjectWithTag("Indicator"));
     }
 }

@@ -161,6 +161,15 @@ public partial class @Input : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Charge"",
+                    ""type"": ""Value"",
+                    ""id"": ""83f5c858-4add-41a2-8ecd-423baa89095a"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": ""Hold"",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -603,6 +612,17 @@ public partial class @Input : IInputActionCollection2, IDisposable
                     ""action"": ""Special"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b55864a2-cdf3-4ccf-8aa3-240cc240a9aa"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Charge"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -978,7 +998,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""9e92bb26-7e3b-4ec4-b06b-3c8f8e498ddc"",
-                    ""path"": ""*/{Submit}"",
+                    ""path"": ""<Gamepad>/buttonSouth"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -1234,6 +1254,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         m_Player_SwitchStyle = m_Player.FindAction("SwitchStyle", throwIfNotFound: true);
         m_Player_SlowMo = m_Player.FindAction("SlowMo", throwIfNotFound: true);
         m_Player_Special = m_Player.FindAction("Special", throwIfNotFound: true);
+        m_Player_Charge = m_Player.FindAction("Charge", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1321,6 +1342,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_SwitchStyle;
     private readonly InputAction m_Player_SlowMo;
     private readonly InputAction m_Player_Special;
+    private readonly InputAction m_Player_Charge;
     public struct PlayerActions
     {
         private @Input m_Wrapper;
@@ -1340,6 +1362,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         public InputAction @SwitchStyle => m_Wrapper.m_Player_SwitchStyle;
         public InputAction @SlowMo => m_Wrapper.m_Player_SlowMo;
         public InputAction @Special => m_Wrapper.m_Player_Special;
+        public InputAction @Charge => m_Wrapper.m_Player_Charge;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1394,6 +1417,9 @@ public partial class @Input : IInputActionCollection2, IDisposable
                 @Special.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSpecial;
                 @Special.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSpecial;
                 @Special.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSpecial;
+                @Charge.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnCharge;
+                @Charge.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnCharge;
+                @Charge.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnCharge;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -1443,6 +1469,9 @@ public partial class @Input : IInputActionCollection2, IDisposable
                 @Special.started += instance.OnSpecial;
                 @Special.performed += instance.OnSpecial;
                 @Special.canceled += instance.OnSpecial;
+                @Charge.started += instance.OnCharge;
+                @Charge.performed += instance.OnCharge;
+                @Charge.canceled += instance.OnCharge;
             }
         }
     }
@@ -1622,6 +1651,7 @@ public partial class @Input : IInputActionCollection2, IDisposable
         void OnSwitchStyle(InputAction.CallbackContext context);
         void OnSlowMo(InputAction.CallbackContext context);
         void OnSpecial(InputAction.CallbackContext context);
+        void OnCharge(InputAction.CallbackContext context);
     }
     public interface IUIActions
     {

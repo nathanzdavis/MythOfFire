@@ -54,6 +54,7 @@ public class WaveController : MonoBehaviour
     public float ttp2time;
     public float ttp3time;
     public float ttp4time;
+    public bool ttpActive;
 
     void Start()
     {
@@ -67,16 +68,19 @@ public class WaveController : MonoBehaviour
         origEnemyCountWave3 = enemyCountWave3;
         origEnemyCountWave4 = enemyCountWave4;
         Invoke("WaveUI", timeBetweenWaves1 / 2);
+
+        /*
         Invoke("ttp1", ttp1time);
         Invoke("ttp2", ttp2time);
         Invoke("ttp3", ttp3time);
         Invoke("ttp4", ttp4time);
+        */
     }
 
     private void ttp1()
     {
         UIController.instance.tooltip1.SetActive(true);
-        Invoke("hidettp1", 15);
+        Invoke("hidettp1", 10);
     }
 
     private void hidettp1()
@@ -87,7 +91,7 @@ public class WaveController : MonoBehaviour
     private void ttp2()
     {
         UIController.instance.tooltip2.SetActive(true);
-        Invoke("hidettp2", 15);
+        Invoke("hidettp2", 10);
     }
 
     private void hidettp2()
@@ -98,7 +102,7 @@ public class WaveController : MonoBehaviour
     private void ttp3()
     {
         UIController.instance.tooltip3.SetActive(true);
-        Invoke("hidettp3", 15);
+        Invoke("hidettp3", 10);
     }
 
     private void hidettp3()
@@ -109,10 +113,23 @@ public class WaveController : MonoBehaviour
     private void ttp4()
     {
         UIController.instance.tooltip4.SetActive(true);
-        Invoke("hidettp4", 15);
+        Invoke("hidettp4", 10);
+
     }
 
     private void hidettp4()
+    {
+        UIController.instance.tooltip4.SetActive(false);
+    }
+
+    public void ttp5()
+    {
+        UIController.instance.tooltip5.SetActive(true);
+        Invoke("hidettp5", 10);
+
+    }
+
+    private void hidettp5()
     {
         UIController.instance.tooltip4.SetActive(false);
     }
@@ -200,6 +217,16 @@ public class WaveController : MonoBehaviour
 
     private void Update()
     {
+        if (!ttpActive)
+        {
+            hidettp1();
+            hidettp2();
+            hidettp3();
+            hidettp4();
+            hidettp5();
+        }
+
+
         if (enemyCountWave1 > 0 && !wave1complete)
         {
             print("Wave 1 starting");
@@ -275,6 +302,7 @@ public class WaveController : MonoBehaviour
         //mainCam.m_Lens.FieldOfView = bossFOV;
 
         Invoke("HandleWave4", timeBetweenWaves1);
+        Invoke("ttp5", 12);
         currentEnemyCounter = 0;
     }
 

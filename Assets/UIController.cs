@@ -24,6 +24,7 @@ public class UIController : MonoBehaviour
     public GameObject tooltip2;
     public GameObject tooltip3;
     public GameObject tooltip4;
+    public GameObject tooltip5;
     public IEnumerator fillScreen()
     {
         Color c = bloodyScreen.color;
